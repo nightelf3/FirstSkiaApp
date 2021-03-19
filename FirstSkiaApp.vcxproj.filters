@@ -16,6 +16,12 @@
     <Filter Include="Header Files\Interfaces">
       <UniqueIdentifier>{7e7d6ce4-f55e-49f9-8348-b0ed6f9ded65}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Layers">
+      <UniqueIdentifier>{0d8b512a-ac28-46c3-93b8-a9466a78d70d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Layers">
+      <UniqueIdentifier>{92f8e6f1-da65-4f68-81d5-00f527903f37}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -29,6 +35,9 @@
     </ClCompile>
     <ClCompile Include="src\PlatformApplication_win.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer1.cpp">
+      <Filter>Source Files\Layers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -49,6 +58,12 @@
     </ClInclude>
     <ClInclude Include="src\include\Interfaces\IPlatformWindow.h">
       <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\BaseLayer.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer1.h">
+      <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

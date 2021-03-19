@@ -36,7 +36,7 @@ void Application::OnPaint()
 void Application::OnIdle()
 {
 	if (auto layer = m_Layers.Active())
-		layer->DrawOnIdle() ? Invalidate() : void();
+		layer->IsDrawOnIdle() ? Invalidate() : void();
 }
 
 void Application::OnResize(int w, int h)

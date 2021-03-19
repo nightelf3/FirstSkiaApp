@@ -7,12 +7,11 @@
 struct ILayer
 {
 	virtual void Draw(SkCanvas* canvas) = 0;
-	virtual void Resize(int w, int h) = 0;
+	virtual std::wstring GetTitle() const = 0;
+	virtual bool IsDrawOnIdle() const = 0;
 	virtual bool ProcessKey(Key key, InputState state, ModifierKey modifiers) = 0;
 	virtual bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) = 0;
 	virtual bool ProcessMouseWheel(InputState state, ModifierKey modifiers) = 0;
-	virtual bool DrawOnIdle() const = 0;
-	virtual std::wstring GetTitle() const = 0;
 };
 
 using spLayer = std::shared_ptr<ILayer>;

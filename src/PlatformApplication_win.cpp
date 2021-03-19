@@ -1,62 +1,14 @@
 #include "include/core/SkCanvas.h"
 #include "include/Application.h"
 
+#include "include/Layers/ExampleLayer1.h"
+
 #include <Windows.h>
-
-//TODO: add base layer
-class FirstLayer : public ILayer
-{
-	void Draw(SkCanvas* canvas) override
-	{
-		const auto bounds = canvas->getDeviceClipBounds();
-		canvas->clear(SkColors::kBlack);
-
-		SkPaint paint;
-		paint.setStyle(SkPaint::Style::kFill_Style);
-		paint.setColor(SkColors::kRed);
-
-		SkRect rect = SkRect::MakeWH(bounds.width() / 2.f, bounds.height() / 2.f);
-		rect.offsetTo(bounds.width() / 4.f, bounds.height() / 4.f);
-		canvas->drawRect(rect, paint);
-	}
-
-	void Resize(int w, int h) override {}
-	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override { return false; }
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
-	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
-	bool DrawOnIdle() const override { return false; }
-	std::wstring GetTitle() const override { return L"FirstLayer"; };
-};
-
-class SecondLayer : public ILayer
-{
-	void Draw(SkCanvas* canvas) override
-	{
-		const auto bounds = canvas->getDeviceClipBounds();
-		canvas->clear(SkColors::kWhite);
-
-		SkPaint paint;
-		paint.setStyle(SkPaint::Style::kFill_Style);
-		paint.setColor(SkColors::kRed);
-
-		SkRect rect = SkRect::MakeWH(bounds.width() / 2.f, bounds.height() / 2.f);
-		rect.offsetTo(bounds.width() / 4.f, bounds.height() / 4.f);
-		canvas->drawRect(rect, paint);
-	}
-
-	void Resize(int w, int h) override {}
-	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override { return false; }
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
-	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
-	bool DrawOnIdle() const override { return false; }
-	std::wstring GetTitle() const override { return L"SecondLayer"; };
-};
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application app;
-	app.AddLayer(std::make_shared<FirstLayer>());
-	app.AddLayer(std::make_shared<SecondLayer>());
+	app.AddLayer(std::make_shared<ExampleLayer1>());
 	app.Show();
 
 	MSG msg;
