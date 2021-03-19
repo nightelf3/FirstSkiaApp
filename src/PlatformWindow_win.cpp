@@ -243,6 +243,11 @@ public:
 		InvalidateRect(m_hWnd, nullptr, false);
 	}
 
+	void SetTitle(const std::wstring& title) override
+	{
+		SetWindowText(m_hWnd, title.c_str());
+	}
+
 private:
 	HINSTANCE m_hInstance;
 	HWND m_hWnd;

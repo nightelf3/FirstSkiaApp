@@ -11,6 +11,7 @@ struct IPlatformWindow
 	virtual void Draw() = 0;
 	virtual sk_sp<SkSurface> Resize(int width, int height) = 0;
 	virtual void Invalidate() = 0;
+	virtual void SetTitle(const std::wstring& title) = 0;
 };
 
 std::unique_ptr<IPlatformWindow> CreatePlatformWindow(IApplication* application);

@@ -25,6 +25,7 @@ class FirstLayer : public ILayer
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
 	bool DrawOnIdle() const override { return false; }
+	std::wstring GetTitle() const override { return L"FirstLayer"; };
 };
 
 class SecondLayer : public ILayer
@@ -48,14 +49,15 @@ class SecondLayer : public ILayer
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
 	bool DrawOnIdle() const override { return false; }
+	std::wstring GetTitle() const override { return L"SecondLayer"; };
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application app;
-
 	app.AddLayer(std::make_shared<FirstLayer>());
 	app.AddLayer(std::make_shared<SecondLayer>());
+	app.Show();
 
 	MSG msg;
 	memset(&msg, 0, sizeof(msg));

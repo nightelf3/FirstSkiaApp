@@ -10,6 +10,7 @@ class Application : public IApplication
 public:
 	Application();
 
+	void Show() override;
 	void AddLayer(spLayer&& layer) override;
 	void OnPaint() override;
 	void OnIdle() override;

@@ -4,13 +4,20 @@
 Application::Application()
 {
 	m_Window = CreatePlatformWindow(this);
+}
+
+void Application::Show()
+{
+	if (auto layer = m_Layers.Active())
+		m_Window->SetTitle(layer->GetTitle());
 	m_Window->Show();
 }
 
 void Application::AddLayer(spLayer&& layer)
 {
-	if (layer)
-		m_Layers.Add(std::move(layer));
+	if (!layer)
+		return;
+	m_Layers.Add(std::move(layer));
 }
 
 void Application::OnPaint()
@@ -46,6 +53,8 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 		if (InputState::kDown == state)
 		{
 			m_Layers.Prev();
+			if (auto layer = m_Layers.Active())
+				m_Window->SetTitle(layer->GetTitle());
 			Invalidate();
 		}
 		return true;
@@ -54,6 +63,8 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 		if (InputState::kDown == state)
 		{
 			m_Layers.Next();
+			if (auto layer = m_Layers.Active())
+				m_Window->SetTitle(layer->GetTitle());
 			Invalidate();
 		}
 		return true;

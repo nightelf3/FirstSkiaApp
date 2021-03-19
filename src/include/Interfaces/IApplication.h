@@ -5,6 +5,7 @@
 
 struct IApplication
 {
+	virtual void Show() = 0;
 	virtual void AddLayer(spLayer&& layer) = 0;
 	virtual void OnPaint() = 0;
 	virtual void OnIdle() = 0;
