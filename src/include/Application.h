@@ -5,7 +5,6 @@
 #include "Interfaces/IPlatformWindow.h"
 #include "LayerCollection.h"
 
-//TODO: move to platform application
 class Application : public IApplication
 {
 public:

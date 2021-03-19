@@ -1,5 +1,6 @@
 #include "include/core/SkCanvas.h"
 #include "include/Application.h"
+
 #include <Windows.h>
 
 //TODO: add base layer
