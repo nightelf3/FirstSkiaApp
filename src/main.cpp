@@ -1,57 +1,60 @@
 #include "include/core/SkCanvas.h"
-#include "include/AppWindow.h"
+#include "include/Application.h"
+#include <Windows.h>
 
 //TODO: add base layer
 class FirstLayer : public ILayer
 {
-	void Draw(SkSurface* surface) override
+	void Draw(SkCanvas* canvas) override
 	{
-		surface->getCanvas()->clear(SkColors::kBlack);
+		const auto bounds = canvas->getDeviceClipBounds();
+		canvas->clear(SkColors::kBlack);
 
 		SkPaint paint;
 		paint.setStyle(SkPaint::Style::kFill_Style);
 		paint.setColor(SkColors::kRed);
 
-		SkRect rect = SkRect::MakeWH(surface->width() / 2.f, surface->height() / 2.f);
-		rect.offsetTo(surface->width() / 4.f, surface->height() / 4.f);
-		surface->getCanvas()->drawRect(rect, paint);
+		SkRect rect = SkRect::MakeWH(bounds.width() / 2.f, bounds.height() / 2.f);
+		rect.offsetTo(bounds.width() / 4.f, bounds.height() / 4.f);
+		canvas->drawRect(rect, paint);
 	}
 
 	void Resize(int w, int h) override {}
 	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
-	bool DrawOnIdle() const override { return true; }
+	bool DrawOnIdle() const override { return false; }
 };
 
 class SecondLayer : public ILayer
 {
-	void Draw(SkSurface* surface) override
+	void Draw(SkCanvas* canvas) override
 	{
-		surface->getCanvas()->clear(SkColors::kWhite);
+		const auto bounds = canvas->getDeviceClipBounds();
+		canvas->clear(SkColors::kWhite);
 
 		SkPaint paint;
 		paint.setStyle(SkPaint::Style::kFill_Style);
 		paint.setColor(SkColors::kRed);
 
-		SkRect rect = SkRect::MakeWH(surface->width() / 2.f, surface->height() / 2.f);
-		rect.offsetTo(surface->width() / 4.f, surface->height() / 4.f);
-		surface->getCanvas()->drawRect(rect, paint);
+		SkRect rect = SkRect::MakeWH(bounds.width() / 2.f, bounds.height() / 2.f);
+		rect.offsetTo(bounds.width() / 4.f, bounds.height() / 4.f);
+		canvas->drawRect(rect, paint);
 	}
 
 	void Resize(int w, int h) override {}
 	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
 	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
-	bool DrawOnIdle() const override { return true; }
+	bool DrawOnIdle() const override { return false; }
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	AppWindow wnd;
+	Application app;
 
-	wnd.AddLayer(std::make_shared<FirstLayer>());
-	wnd.AddLayer(std::make_shared<SecondLayer>());
+	app.AddLayer(std::make_shared<FirstLayer>());
+	app.AddLayer(std::make_shared<SecondLayer>());
 
 	MSG msg;
 	memset(&msg, 0, sizeof(msg));
@@ -68,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				// Ensure that call onIdle at least once per WM_PAINT, or mouse events can
 				// overwhelm the message processing loop, and prevent animation from running.
 				if (!idled) {
-					wnd.OnIdle();
+					app.OnIdle();
 				}
 				idled = false;
 			}
@@ -76,8 +79,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else
 		{
-			wnd.OnIdle();
+			app.OnIdle();
 			idled = true;
+			Sleep(1);
 		}
 	}
 

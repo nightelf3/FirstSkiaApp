@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -13,13 +13,16 @@
   <ItemGroup>
     <ClCompile Include="src\LayerCollection.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\AppWindow.cpp" />
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\PlatformWindow_win.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\include\Interfaces\IApplication.h" />
+    <ClInclude Include="src\include\Interfaces\ILayer.h" />
+    <ClInclude Include="src\include\Interfaces\IPlatformWindow.h" />
     <ClInclude Include="src\include\LayerCollection.h" />
     <ClInclude Include="src\include\Types.h" />
-    <ClInclude Include="src\include\ILayer.h" />
-    <ClInclude Include="src\include\AppWindow.h" />
+    <ClInclude Include="src\include\Application.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

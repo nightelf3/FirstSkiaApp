@@ -1,7 +1,7 @@
 #ifndef LAYERCOLLECTION_H_C708B479_AD8B_4B57_9752_4B396C401064
 #define LAYERCOLLECTION_H_C708B479_AD8B_4B57_9752_4B396C401064
 
-#include "ILayer.h"
+#include "Interfaces/ILayer.h"
 #include <list>
 
 class LayerCollection
