@@ -39,6 +39,12 @@
     <ClCompile Include="src\Layers\ExampleLayer1.cpp">
       <Filter>Source Files\Layers</Filter>
     </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer2.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer3.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Types.h">
@@ -63,6 +69,12 @@
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\ExampleLayer1.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer2.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer3.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>

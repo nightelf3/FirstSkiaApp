@@ -14,6 +14,8 @@
     <ClCompile Include="src\LayerCollection.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer1.cpp" />
+    <ClCompile Include="src\Layers\ExampleLayer2.cpp" />
+    <ClCompile Include="src\Layers\ExampleLayer3.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
   </ItemGroup>
@@ -24,6 +26,8 @@
     <ClInclude Include="src\include\LayerCollection.h" />
     <ClInclude Include="src\include\Layers\BaseLayer.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer1.h" />
+    <ClInclude Include="src\include\Layers\ExampleLayer2.h" />
+    <ClInclude Include="src\include\Layers\ExampleLayer3.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\Application.h" />
   </ItemGroup>
@@ -66,7 +70,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(MSBuildProjectDirectory)\Skia;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)\src;$(MSBuildProjectDirectory)\Skia;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

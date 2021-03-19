@@ -95,8 +95,8 @@ namespace
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	IApplication* window = reinterpret_cast<IApplication*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-	if (!window)
+	IApplication* app = reinterpret_cast<IApplication*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	if (!app)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 
 	bool eventHandled = false;
@@ -106,7 +106,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		PAINTSTRUCT ps;
 		BeginPaint(hWnd, &ps);
-		window->OnPaint();
+		app->OnPaint();
 		EndPaint(hWnd, &ps);
 		eventHandled = true;
 		break;
@@ -123,18 +123,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_SIZE:
-		window->OnResize(LOWORD(lParam), HIWORD(lParam));
+		app->OnResize(LOWORD(lParam), HIWORD(lParam));
 		eventHandled = true;
 		break;
 
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
-		eventHandled = window->OnKey(get_key(wParam), InputState::kDown, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnKey(get_key(wParam), InputState::kDown, get_modifiers(message, wParam, lParam));
+		if (eventHandled)
+			app->Invalidate();
 		break;
 
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-		eventHandled = window->OnKey(get_key(wParam), InputState::kUp, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnKey(get_key(wParam), InputState::kUp, get_modifiers(message, wParam, lParam));
+		if (eventHandled)
+			app->Invalidate();
 		break;
 
 	case WM_LBUTTONDOWN:
@@ -142,19 +146,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		const int xPos = GET_X_LPARAM(lParam);
 		const int yPos = GET_Y_LPARAM(lParam);
 		const InputState iState = ((wParam & MK_LBUTTON) != 0) ? InputState::kDown : InputState::kUp;
-		eventHandled = window->OnMouse(xPos, yPos, iState, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouse(xPos, yPos, iState, get_modifiers(message, wParam, lParam));
+		if (eventHandled)
+			app->Invalidate();
 		break;
 	}
 
 	case WM_MOUSEMOVE: {
 		const int xPos = GET_X_LPARAM(lParam);
 		const int yPos = GET_Y_LPARAM(lParam);
-		eventHandled = window->OnMouse(xPos, yPos, InputState::kMove, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouse(xPos, yPos, InputState::kMove, get_modifiers(message, wParam, lParam));
+		if (eventHandled)
+			app->Invalidate();
 		break;
 	}
 
 	case WM_MOUSEWHEEL:
-		eventHandled = window->OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? InputState::kZoomIn : InputState::kZoomOut, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? InputState::kZoomIn : InputState::kZoomOut, get_modifiers(message, wParam, lParam));
 		break;
 
 	default:

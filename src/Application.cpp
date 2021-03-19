@@ -55,7 +55,6 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 			m_Layers.Prev();
 			if (auto layer = m_Layers.Active())
 				m_Window->SetTitle(layer->GetTitle());
-			Invalidate();
 		}
 		return true;
 
@@ -65,7 +64,6 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 			m_Layers.Next();
 			if (auto layer = m_Layers.Active())
 				m_Window->SetTitle(layer->GetTitle());
-			Invalidate();
 		}
 		return true;
 

@@ -3,9 +3,10 @@
 
 #include "BaseLayer.h"
 
-class ExampleLayer1 : public BaseLayer
+class ExampleLayer1 final : public BaseLayer
 {
-	std::wstring GetTitle() const override { return L"Example #1: Draw shape depends on window size"; };
+public:
+	std::wstring GetTitle() const override { return L"Example #1: Draw a simple shape"; };
 	void Draw(SkCanvas* canvas) override;
 };
 

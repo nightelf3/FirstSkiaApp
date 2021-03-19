@@ -2,6 +2,8 @@
 #include "include/Application.h"
 
 #include "include/Layers/ExampleLayer1.h"
+#include "include/Layers/ExampleLayer2.h"
+#include "include/Layers/ExampleLayer3.h"
 
 #include <Windows.h>
 
@@ -9,6 +11,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	Application app;
 	app.AddLayer(std::make_shared<ExampleLayer1>());
+	app.AddLayer(std::make_shared<ExampleLayer2>());
+	app.AddLayer(std::make_shared<ExampleLayer3>());
 	app.Show();
 
 	MSG msg;
