@@ -1,6 +1,7 @@
 #include "include/core/SkCanvas.h"
 #include "include/AppWindow.h"
 
+//TODO: add base layer
 class FirstLayer : public ILayer
 {
 	void Draw(SkSurface* surface) override
@@ -23,9 +24,34 @@ class FirstLayer : public ILayer
 	bool DrawOnIdle() const override { return true; }
 };
 
+class SecondLayer : public ILayer
+{
+	void Draw(SkSurface* surface) override
+	{
+		surface->getCanvas()->clear(SkColors::kWhite);
+
+		SkPaint paint;
+		paint.setStyle(SkPaint::Style::kFill_Style);
+		paint.setColor(SkColors::kRed);
+
+		SkRect rect = SkRect::MakeWH(surface->width() / 2.f, surface->height() / 2.f);
+		rect.offsetTo(surface->width() / 4.f, surface->height() / 4.f);
+		surface->getCanvas()->drawRect(rect, paint);
+	}
+
+	void Resize(int w, int h) override {}
+	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override { return false; }
+	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override { return false; }
+	bool ProcessMouseWheel(InputState state, ModifierKey modifiers) override { return false; }
+	bool DrawOnIdle() const override { return true; }
+};
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	AppWindow wnd(std::make_unique<FirstLayer>());
+	AppWindow wnd;
+
+	wnd.AddLayer(std::make_shared<FirstLayer>());
+	wnd.AddLayer(std::make_shared<SecondLayer>());
 
 	MSG msg;
 	memset(&msg, 0, sizeof(msg));

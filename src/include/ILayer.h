@@ -14,4 +14,6 @@ struct ILayer
 	virtual bool DrawOnIdle() const = 0;
 };
 
+using spLayer = std::shared_ptr<ILayer>;
+
 #endif // ILAYER_H_35EA475D_38E7_4303_A46E_270BBB4F1377

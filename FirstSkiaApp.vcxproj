@@ -11,10 +11,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\LayerCollection.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\AppWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\include\LayerCollection.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\ILayer.h" />
     <ClInclude Include="src\include\AppWindow.h" />

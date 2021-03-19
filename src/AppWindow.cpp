@@ -164,9 +164,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 }
 
-AppWindow::AppWindow(std::unique_ptr<ILayer> layer) :
-	m_hInstance(GetModuleHandle(nullptr)),
-	m_Layer(std::move(layer))
+AppWindow::AppWindow() :
+	m_hInstance(GetModuleHandle(nullptr))
 {
 	static WNDCLASSEX wcex;
 	static bool wcexInit = false;
@@ -203,14 +202,20 @@ AppWindow::~AppWindow()
 	DestroyWindow(m_hWnd);
 }
 
+void AppWindow::AddLayer(spLayer&& layer)
+{
+	if (layer)
+		m_Layers.Add(std::move(layer));
+}
+
 void AppWindow::OnPaint()
 {
 	if (!m_Surface)
 		return;
 
 	// draw into the canvas of this surface
-	if (m_Layer)
-		m_Layer->Draw(m_Surface.get());
+	if (auto layer = m_Layers.Active())
+		layer->Draw(m_Surface.get());
 
 	m_Surface->flushAndSubmit();
 	SwapBuffers();
@@ -218,8 +223,8 @@ void AppWindow::OnPaint()
 
 void AppWindow::OnIdle()
 {
-	if (m_Layer && m_Layer->DrawOnIdle())
-		Invalidate();
+	if (auto layer = m_Layers.Active())
+		layer->DrawOnIdle() ? Invalidate() : void();
 }
 
 void AppWindow::OnResize(int w, int h)
@@ -247,17 +252,45 @@ void AppWindow::OnResize(int w, int h)
 
 bool AppWindow::OnKey(Key key, InputState state, ModifierKey modifiers)
 {
-	return m_Layer ? m_Layer->ProcessKey(key, state, modifiers) : false;
+	//TODO: change Window name
+	switch (key)
+	{
+	case Key::kLeft:
+		if (InputState::kDown == state)
+		{
+			m_Layers.Prev();
+			Invalidate();
+		}
+		return true;
+
+	case Key::kRight:
+		if (InputState::kDown == state)
+		{
+			m_Layers.Next();
+			Invalidate();
+		}
+		return true;
+
+	default:
+		if (auto layer = m_Layers.Active())
+			return layer->ProcessKey(key, state, modifiers);
+	}
+
+	return false;
 }
 
 bool AppWindow::OnMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
-	return m_Layer ? m_Layer->ProcessMouse(x, y, state, modifiers) : false;
+	if (auto layer = m_Layers.Active())
+		return layer->ProcessMouse(x, y, state, modifiers);
+	return false;
 }
 
 bool AppWindow::OnMouseWheel(InputState state, ModifierKey modifiers)
 {
-	return m_Layer ? m_Layer->ProcessMouseWheel(state, modifiers) : false;
+	if (auto layer = m_Layers.Active())
+		return layer->ProcessMouseWheel(state, modifiers);
+	return false;
 }
 
 void AppWindow::Invalidate()
