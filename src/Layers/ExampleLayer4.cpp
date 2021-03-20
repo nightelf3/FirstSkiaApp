@@ -1,6 +1,6 @@
-#include "include/Layers/ExampleLayer3.h"
+#include "include/Layers/ExampleLayer4.h"
 
-void ExampleLayer3::Draw(SkCanvas* canvas)
+void ExampleLayer4::Draw(SkCanvas* canvas)
 {
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);

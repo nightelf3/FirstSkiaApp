@@ -2,7 +2,7 @@
 #define EXAMPLELAYER3_H_F0693353_488C_432D_A3D9_D0B3E3BFCD9B
 
 #include "BaseLayer.h"
-#include "RandomShapes.h"
+#include "Utils/RandomShapes.h"
 
 class ExampleLayer3 final : public BaseRandomShapeLayer
 {

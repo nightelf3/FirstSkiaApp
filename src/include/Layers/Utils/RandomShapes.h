@@ -1,7 +1,7 @@
 #ifndef RANDOMSHAPERS_H_6286AFF7_63D1_44BA_A1FD_DF37CE16190A
 #define RANDOMSHAPERS_H_6286AFF7_63D1_44BA_A1FD_DF37CE16190A
 
-#include "BaseLayer.h"
+#include "include/Layers/BaseLayer.h"
 
 #include <list>
 #include "include/core/SkPath.h"

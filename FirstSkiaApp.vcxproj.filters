@@ -22,6 +22,12 @@
     <Filter Include="Source Files\Layers">
       <UniqueIdentifier>{92f8e6f1-da65-4f68-81d5-00f527903f37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Layers\Utils">
+      <UniqueIdentifier>{54d3a124-d289-480c-b7c3-56834fc5ba10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Layers\Utils">
+      <UniqueIdentifier>{8c3fb82b-ca49-434e-b500-0d094b82a52e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -45,8 +51,11 @@
     <ClCompile Include="src\Layers\ExampleLayer3.cpp">
       <Filter>Source Files\Layers</Filter>
     </ClCompile>
-    <ClCompile Include="src\Layers\RandomShapes.cpp">
+    <ClCompile Include="src\Layers\ExampleLayer4.cpp">
       <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\Utils\RandomShapes.cpp">
+      <Filter>Source Files\Layers\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -80,8 +89,11 @@
     <ClInclude Include="src\include\Layers\ExampleLayer3.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\Layers\RandomShapes.h">
+    <ClInclude Include="src\include\Layers\ExampleLayer4.h">
       <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\Utils\RandomShapes.h">
+      <Filter>Header Files\Layers\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
