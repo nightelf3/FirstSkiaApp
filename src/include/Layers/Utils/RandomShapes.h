@@ -3,7 +3,7 @@
 
 #include "include/Layers/BaseLayer.h"
 
-#include <list>
+#include <vector>
 #include "include/core/SkPath.h"
 
 struct IRandomShape
@@ -73,7 +73,7 @@ public:
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
 
 private:
-	std::list<std::unique_ptr<IRandomShape>> m_Shapes;
+	std::vector<std::unique_ptr<IRandomShape>> m_Shapes;
 };
 
 #endif // RANDOMSHAPERS_H_6286AFF7_63D1_44BA_A1FD_DF37CE16190A
