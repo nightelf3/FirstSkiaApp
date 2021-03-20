@@ -16,6 +16,7 @@
     <ClCompile Include="src\Layers\ExampleLayer1.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer2.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer3.cpp" />
+    <ClCompile Include="src\Layers\RandomShapes.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
   </ItemGroup>
@@ -28,6 +29,7 @@
     <ClInclude Include="src\include\Layers\ExampleLayer1.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer2.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer3.h" />
+    <ClInclude Include="src\include\Layers\RandomShapes.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\Application.h" />
   </ItemGroup>

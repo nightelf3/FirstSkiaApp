@@ -45,6 +45,9 @@
     <ClCompile Include="src\Layers\ExampleLayer3.cpp">
       <Filter>Source Files\Layers</Filter>
     </ClCompile>
+    <ClCompile Include="src\Layers\RandomShapes.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Types.h">
@@ -75,6 +78,9 @@
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\ExampleLayer3.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\RandomShapes.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
