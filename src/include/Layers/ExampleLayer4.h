@@ -7,7 +7,7 @@
 class ExampleLayer4 final : public BaseRandomShapeLayer
 {
 public:
-	std::wstring GetTitle() const override { return L"Example #5: Draw FPS for random shapes"; };
+	std::wstring GetTitle() const override { return L"Example #4: Draw FPS for random shapes"; };
 	void Draw(SkCanvas* canvas) override;
 	bool IsDrawOnIdle() const override { return true; }
 

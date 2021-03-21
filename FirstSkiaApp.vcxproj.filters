@@ -28,6 +28,12 @@
     <Filter Include="Source Files\Layers\Utils">
       <UniqueIdentifier>{8c3fb82b-ca49-434e-b500-0d094b82a52e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Backgounds">
+      <UniqueIdentifier>{8a42a195-ab0f-4efa-8818-bae66c0a2080}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Backgounds">
+      <UniqueIdentifier>{25b4f355-b278-491b-aba7-05c539279c81}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -59,6 +65,15 @@
     </ClCompile>
     <ClCompile Include="src\Layers\Utils\FPS.cpp">
       <Filter>Source Files\Layers\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Backgounds\BaseBackgound.cpp">
+      <Filter>Source Files\Backgounds</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Backgounds\RasterBackgound.cpp">
+      <Filter>Source Files\Backgounds</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp">
+      <Filter>Source Files\Backgounds</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +115,18 @@
     </ClInclude>
     <ClInclude Include="src\include\Layers\Utils\FPS.h">
       <Filter>Header Files\Layers\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\IBackground.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Backgounds\BaseBackgound.h">
+      <Filter>Header Files\Backgounds</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Backgounds\RasterBackgound.h">
+      <Filter>Header Files\Backgounds</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h">
+      <Filter>Header Files\Backgounds</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

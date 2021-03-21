@@ -1,10 +1,9 @@
 #include "include/Interfaces/IPlatformWindow.h"
-#include "include/Types.h"
+#include "include/Interfaces/IBackground.h"
 
 #include <Windows.h>
 #include <windowsx.h>
 #include <tchar.h>
-#include <vector>
 #include <map>
 
 namespace
@@ -201,7 +200,7 @@ public:
 		}
 
 		m_hWnd = CreateWindow(g_sWindowClass, nullptr, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-			m_Width, m_Height, nullptr, nullptr, m_hInstance, nullptr);
+			CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_hInstance, nullptr);
 		SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)application);
 	}
 
@@ -217,33 +216,17 @@ public:
 
 	void Draw() override
 	{
-		BITMAPINFO* bmpInfo = reinterpret_cast<BITMAPINFO*>(m_SurfaceMemory.data());
-		HDC dc = GetDC(m_hWnd);
-		StretchDIBits(dc, 0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, bmpInfo->bmiColors,
-			bmpInfo, DIB_RGB_COLORS, SRCCOPY);
-		ReleaseDC(m_hWnd, dc);
+		if (m_Background)
+			m_Background->SwapBuffers();
 	}
 
 	sk_sp<SkSurface> Resize(int width, int height) override
 	{
-		m_Width = width;
-		m_Height = height;
+		if (!m_Background)
+			return nullptr;
 
-		const size_t bmpSize = sizeof(BITMAPINFOHEADER) + m_Width * m_Height * sizeof(uint32_t);
-		m_SurfaceMemory.resize(bmpSize);
-
-		BITMAPINFO* bmpInfo = reinterpret_cast<BITMAPINFO*>(m_SurfaceMemory.data());
-		ZeroMemory(bmpInfo, sizeof(BITMAPINFO));
-		bmpInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		bmpInfo->bmiHeader.biWidth = m_Width;
-		bmpInfo->bmiHeader.biHeight = -m_Height; // negative means top-down bitmap. Skia draws top-down.
-		bmpInfo->bmiHeader.biPlanes = 1;
-		bmpInfo->bmiHeader.biBitCount = 32;
-		bmpInfo->bmiHeader.biCompression = BI_RGB;
-		void* pixels = bmpInfo->bmiColors;
-
-		SkImageInfo info = SkImageInfo::Make(m_Width, m_Height, SkColorType::kBGRA_8888_SkColorType, kPremul_SkAlphaType, nullptr);
-		return SkSurface::MakeRasterDirect(info, pixels, sizeof(uint32_t) * m_Width);
+		m_Background->Destroy();
+		return m_Background->CreateSurface(width, height);
 	}
 
 	void Invalidate() override
@@ -256,14 +239,31 @@ public:
 		SetWindowText(m_hWnd, title.c_str());
 	}
 
+	const IBackground* GetBackgound() const override
+	{
+		return m_Background.get();
+	}
+
+	sk_sp<SkSurface> SetBackgound(std::unique_ptr<IBackground>&& background) override
+	{
+		m_Background = std::move(background);
+		if (!m_Background)
+			return nullptr;
+
+		RECT rect;
+		GetClientRect(GetHandle(), &rect);
+		return m_Background->CreateSurface(rect.right - rect.left, rect.bottom - rect.top);
+	}
+
+	WHandle GetHandle() const override
+	{
+		return m_hWnd;
+	}
+
 private:
 	HINSTANCE m_hInstance;
 	HWND m_hWnd;
-
-	int m_Width = CW_USEDEFAULT;
-	int m_Height = CW_USEDEFAULT;
-
-	std::vector<uint8_t> m_SurfaceMemory;
+	std::unique_ptr<IBackground> m_Background;
 };
 
 std::unique_ptr<IPlatformWindow> CreatePlatformWindow(IApplication* application)

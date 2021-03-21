@@ -23,6 +23,9 @@ public:
 	void SwapBuffers() override;
 
 private:
+	void ChangeBackgound(std::unique_ptr<IBackground>&& backgound);
+	void UpdateTitle();
+
 	std::unique_ptr<IPlatformWindow> m_Window;
 	LayerCollection m_Layers;
 	sk_sp<SkSurface> m_Surface;

@@ -1,15 +1,18 @@
 #include "include/core/SkTypes.h"
 #include "include/Application.h"
 
+#include "include/Backgounds/RasterBackgound.h"
+#include "include/Backgounds/OpenGLBackgound.h"
+
 Application::Application()
 {
 	m_Window = CreatePlatformWindow(this);
+	m_Window->SetBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
 }
 
 void Application::Show()
 {
-	if (auto layer = m_Layers.Active())
-		m_Window->SetTitle(layer->GetTitle());
+	UpdateTitle();
 	m_Window->Show();
 }
 
@@ -46,15 +49,13 @@ void Application::OnResize(int w, int h)
 
 bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 {
-	//TODO: change Window name
 	switch (key)
 	{
 	case Key::kLeft:
 		if (InputState::kDown == state)
 		{
 			m_Layers.Prev();
-			if (auto layer = m_Layers.Active())
-				m_Window->SetTitle(layer->GetTitle());
+			UpdateTitle();
 		}
 		return true;
 
@@ -62,9 +63,18 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 		if (InputState::kDown == state)
 		{
 			m_Layers.Next();
-			if (auto layer = m_Layers.Active())
-				m_Window->SetTitle(layer->GetTitle());
+			UpdateTitle();
 		}
+		return true;
+
+	case Key::kZ:
+		if (InputState::kDown == state)
+			ChangeBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
+		return true;
+
+	case Key::kX:
+		if (InputState::kDown == state)
+			ChangeBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
 		return true;
 
 	default:
@@ -97,4 +107,25 @@ void Application::Invalidate()
 void Application::SwapBuffers()
 {
 	m_Window->Draw();
+}
+
+void Application::ChangeBackgound(std::unique_ptr<IBackground>&& backgound)
+{
+	m_Surface = m_Window->SetBackgound(std::move(backgound));
+	UpdateTitle();
+}
+
+void Application::UpdateTitle()
+{
+	std::wstring title;
+	if (auto background = m_Window->GetBackgound())
+	{
+		title.append(m_Window->GetBackgound()->GetName());
+		title.append(L" - ");
+	}
+
+	if (auto layer = m_Layers.Active())
+		title.append(layer->GetTitle());
+
+	m_Window->SetTitle(std::move(title));
 }

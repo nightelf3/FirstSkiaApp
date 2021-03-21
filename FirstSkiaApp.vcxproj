@@ -11,6 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Backgounds\BaseBackgound.cpp" />
+    <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp" />
+    <ClCompile Include="src\Backgounds\RasterBackgound.cpp" />
     <ClCompile Include="src\LayerCollection.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer1.cpp" />
@@ -23,7 +26,11 @@
     <ClCompile Include="src\PlatformWindow_win.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\include\Backgounds\BaseBackgound.h" />
+    <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h" />
+    <ClInclude Include="src\include\Backgounds\RasterBackgound.h" />
     <ClInclude Include="src\include\Interfaces\IApplication.h" />
+    <ClInclude Include="src\include\Interfaces\IBackground.h" />
     <ClInclude Include="src\include\Interfaces\ILayer.h" />
     <ClInclude Include="src\include\Interfaces\IPlatformWindow.h" />
     <ClInclude Include="src\include\LayerCollection.h" />
@@ -82,14 +89,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SK_GL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>skia.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"</Command>
@@ -101,7 +108,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SK_GL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -110,7 +117,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>skia.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"</Command>

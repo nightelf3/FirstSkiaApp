@@ -53,4 +53,12 @@ enum class InputState
 	kZoomOut
 };
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+using WHandle = HWND;
+#else
+using WHandle = void*;
+#endif
+
 #endif // ENUMS_H_907CD1C9_A3AE_40C3_AF2B_16BD46233C24
