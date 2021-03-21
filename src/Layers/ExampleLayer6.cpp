@@ -41,7 +41,7 @@ namespace
 			x += measure.width() + font.getSize() / 4.f;
 		};
 
-		int lastValid = 0;
+		size_t lastValid = 0;
 		for (size_t i = 0; bFixTypeface && i < lenght; i++)
 		{
 			// if the typeface can't find the proper glyph, try to match a new one to render the str[i]

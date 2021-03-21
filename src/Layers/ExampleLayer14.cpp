@@ -1,6 +1,6 @@
 #include "include/Layers/ExampleLayer14.h"
 #include "include/core/SkMaskFilter.h"
-#include "include/core/SkTextBlob.h"
+#include "include/core/SkFont.h"
 
 void ExampleLayer14::Draw(SkCanvas* canvas)
 {
@@ -10,13 +10,30 @@ void ExampleLayer14::Draw(SkCanvas* canvas)
 	SkPaint paint;
 	paint.setColor(SkColors::kWhite);
 	if (m_bEnableMask)
-		paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 5.0f));
-	sk_sp<SkTextBlob> blob = SkTextBlob::MakeFromString("My First Skia App", SkFont(nullptr, 120));
-	canvas->drawTextBlob(blob.get(), 200, 360, paint);
+		paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, m_Radius));
+	const char str[] = "My First Skia App";
+	canvas->drawSimpleText(str, strlen(str), SkTextEncoding::kUTF8, 200, 360, {nullptr, 120}, paint);
 }
 
 bool ExampleLayer14::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
-	m_bEnableMask = InputState::kUp == state;
+	if (state == InputState::kUp || InputState::kDown == state)
+	{
+		m_bEnableMask = InputState::kUp == state;
+		return true;
+	}
+	return false;
+}
+
+bool ExampleLayer14::ProcessMouseWheel(InputState state, ModifierKey modifiers)
+{
+	if (InputState::kZoomIn == state)
+		m_Radius++;
+	else
+	{
+		m_Radius--;
+		if (m_Radius < 0.f)
+			m_Radius = 0.f;
+	}
 	return true;
 }
