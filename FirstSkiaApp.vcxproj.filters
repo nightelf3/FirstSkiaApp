@@ -75,6 +75,39 @@
     <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp">
       <Filter>Source Files\Backgounds</Filter>
     </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer5.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer6.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer7.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer8.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer9.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer10.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer11.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer12.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer13.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer14.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer15.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Types.h">
@@ -127,6 +160,39 @@
     </ClInclude>
     <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h">
       <Filter>Header Files\Backgounds</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer5.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer6.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer7.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer8.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer9.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer10.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer11.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer12.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer13.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer14.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer15.h">
+      <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
