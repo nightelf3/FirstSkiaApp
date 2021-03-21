@@ -1,11 +1,6 @@
 #include "include/Layers/ExampleLayer14.h"
-#include "include/Layers/Utils/Utils.h"
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkTextBlob.h"
-
-ExampleLayer14::ExampleLayer14()
-{
-}
 
 void ExampleLayer14::Draw(SkCanvas* canvas)
 {

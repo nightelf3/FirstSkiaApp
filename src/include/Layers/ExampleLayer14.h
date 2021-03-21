@@ -6,7 +6,6 @@
 class ExampleLayer14 final : public BaseLayer
 {
 public:
-	ExampleLayer14();
 	std::wstring GetTitle() const override { return L"Example #14: Mask filters"; };
 	void Draw(SkCanvas* canvas) override;
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
