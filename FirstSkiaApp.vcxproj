@@ -31,6 +31,7 @@
     <ClCompile Include="src\Layers\ExampleLayer7.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer8.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer9.cpp" />
+    <ClCompile Include="src\Layers\ThankYouLayer.cpp" />
     <ClCompile Include="src\Layers\Utils\FPS.cpp" />
     <ClCompile Include="src\Layers\Utils\RandomShapes.cpp" />
     <ClCompile Include="src\Layers\Utils\Utils.cpp" />
@@ -62,6 +63,7 @@
     <ClInclude Include="src\include\Layers\ExampleLayer7.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer8.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer9.h" />
+    <ClInclude Include="src\include\Layers\ThankYouLayer.h" />
     <ClInclude Include="src\include\Layers\Utils\FPS.h" />
     <ClInclude Include="src\include\Layers\Utils\RandomShapes.h" />
     <ClInclude Include="src\include\Layers\Utils\Utils.h" />

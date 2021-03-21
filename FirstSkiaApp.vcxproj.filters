@@ -111,6 +111,9 @@
     <ClCompile Include="src\Layers\Utils\Utils.cpp">
       <Filter>Source Files\Layers\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="src\Layers\ThankYouLayer.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Types.h">
@@ -199,6 +202,9 @@
     </ClInclude>
     <ClInclude Include="src\include\Layers\Utils\Utils.h">
       <Filter>Header Files\Layers\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ThankYouLayer.h">
+      <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
