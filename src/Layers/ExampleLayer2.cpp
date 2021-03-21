@@ -1,4 +1,5 @@
 #include "include/Layers/ExampleLayer2.h"
+#include "include/Layers/Utils/Utils.h"
 
 void ExampleLayer2::Draw(SkCanvas* canvas)
 {
@@ -11,8 +12,7 @@ void ExampleLayer2::Draw(SkCanvas* canvas)
 	paint.setColor(SkColors::kRed);
 
 	// get canvas size and resuce it for 1/8
-	SkRect rect;
-	rect.set(canvas->getDeviceClipBounds());
+	SkRect rect = GetBounds(canvas);
 	rect.inset(rect.width() / 8.f, rect.height() / 8.f);
 	canvas->drawOval(rect, paint);
 }

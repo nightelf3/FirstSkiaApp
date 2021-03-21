@@ -8,8 +8,6 @@ enum class ModifierKey
 	kNone = 0,
 	kControl = (1 << 0),
 	kShift = (1 << 1),
-	kOption = (1 << 2),
-	kFirstPress = (1 << 3)
 };
 
 inline ModifierKey& operator |=(ModifierKey& a, ModifierKey b)
@@ -20,27 +18,15 @@ inline ModifierKey& operator |=(ModifierKey& a, ModifierKey b)
 enum class Key
 {
 	kUnknown,
-	kBack,
-	kOK,
+	kEnter,
 	kUp,
 	kDown,
 	kLeft,
 	kRight,
-	kTab,
-	kPageUp,
-	kPageDown,
-	kHome,
-	kEnd,
 	kDelete,
 	kEscape,
-	kShift,
-	kCtrl,
-	kOption,
-	kA,
-	kC,
-	kV,
+	kTab,
 	kX,
-	kY,
 	kZ
 };
 

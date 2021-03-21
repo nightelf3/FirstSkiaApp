@@ -33,6 +33,7 @@
     <ClCompile Include="src\Layers\ExampleLayer9.cpp" />
     <ClCompile Include="src\Layers\Utils\FPS.cpp" />
     <ClCompile Include="src\Layers\Utils\RandomShapes.cpp" />
+    <ClCompile Include="src\Layers\Utils\Utils.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
   </ItemGroup>
@@ -63,6 +64,7 @@
     <ClInclude Include="src\include\Layers\ExampleLayer9.h" />
     <ClInclude Include="src\include\Layers\Utils\FPS.h" />
     <ClInclude Include="src\include\Layers\Utils\RandomShapes.h" />
+    <ClInclude Include="src\include\Layers\Utils\Utils.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\Application.h" />
   </ItemGroup>
@@ -121,7 +123,8 @@
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"</Command>
+      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"
+xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,7 +145,8 @@
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"</Command>
+      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"
+xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

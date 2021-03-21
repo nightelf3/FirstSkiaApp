@@ -51,30 +51,27 @@ bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
 {
 	switch (key)
 	{
-	case Key::kLeft:
-		if (InputState::kDown == state)
-		{
-			m_Layers.Prev();
-			UpdateTitle();
-		}
-		return true;
+	case Key::kTab:
+		if (InputState::kDown != state)
+			break;
 
-	case Key::kRight:
-		if (InputState::kDown == state)
-		{
+		if (ModifierKey::kNone == modifiers)
 			m_Layers.Next();
-			UpdateTitle();
-		}
+		else if (ModifierKey::kShift == modifiers)
+			m_Layers.Prev();
+		UpdateTitle();
 		return true;
 
 	case Key::kZ:
-		if (InputState::kDown == state)
-			ChangeBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
+		if (InputState::kDown != state)
+			break;
+		ChangeBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
 		return true;
 
 	case Key::kX:
-		if (InputState::kDown == state)
-			ChangeBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
+		if (InputState::kDown != state)
+			break;
+		ChangeBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
 		return true;
 
 	default:

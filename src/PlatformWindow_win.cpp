@@ -10,80 +10,30 @@ namespace
 {
 	constexpr TCHAR g_sWindowClass[] = _T("FirstSkiaApp");
 
-	ModifierKey get_modifiers(UINT message, WPARAM wParam, LPARAM lParam)
+	ModifierKey get_modifiers()
 	{
 		ModifierKey modifiers = ModifierKey::kNone;
-
-		switch (message)
-		{
-		case WM_UNICHAR:
-		case WM_CHAR:
-			if (0 == (lParam & (1 << 30))) {
-				modifiers |= ModifierKey::kFirstPress;
-			}
-			if (lParam & (1 << 29)) {
-				modifiers |= ModifierKey::kOption;
-			}
-			break;
-
-		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:
-			if (0 == (lParam & (1 << 30))) {
-				modifiers |= ModifierKey::kFirstPress;
-			}
-			if (lParam & (1 << 29)) {
-				modifiers |= ModifierKey::kOption;
-			}
-			break;
-
-		case WM_KEYUP:
-		case WM_SYSKEYUP:
-			if (lParam & (1 << 29)) {
-				modifiers |= ModifierKey::kOption;
-			}
-			break;
-
-		case WM_LBUTTONDOWN:
-		case WM_LBUTTONUP:
-		case WM_MOUSEMOVE:
-		case WM_MOUSEWHEEL:
-			if (wParam & MK_CONTROL) {
-				modifiers |= ModifierKey::kControl;
-			}
-			if (wParam & MK_SHIFT) {
-				modifiers |= ModifierKey::kShift;
-			}
-			break;
+		if (GetAsyncKeyState(VK_LCONTROL) & 0x8000) {
+			modifiers |= ModifierKey::kControl;
 		}
-
+		if (GetAsyncKeyState(VK_LSHIFT) & 0x8000) {
+			modifiers |= ModifierKey::kShift;
+		}
 		return modifiers;
 	}
 
 	Key get_key(WPARAM vk)
 	{
 		static const std::map<WPARAM, Key> gPair{
-			{VK_BACK, Key::kBack},
-			{VK_CLEAR, Key::kBack},
-			{VK_RETURN, Key::kOK},
+			{VK_RETURN, Key::kEnter},
 			{VK_UP, Key::kUp},
 			{VK_DOWN, Key::kDown},
 			{VK_LEFT, Key::kLeft},
 			{VK_RIGHT, Key::kRight},
 			{VK_TAB, Key::kTab},
-			{VK_PRIOR, Key::kPageUp},
-			{VK_NEXT, Key::kPageDown},
-			{VK_HOME, Key::kHome},
-			{VK_END, Key::kEnd},
 			{VK_DELETE, Key::kDelete},
 			{VK_ESCAPE, Key::kEscape},
-			{VK_SHIFT, Key::kShift},
-			{VK_CONTROL, Key::kCtrl},
-			{VK_MENU, Key::kOption},
-			{'A', Key::kA},
-			{'C', Key::kC},
-			{'V', Key::kV},
 			{'X', Key::kX},
-			{'Y', Key::kY},
 			{'Z', Key::kZ}
 		};
 
@@ -128,14 +78,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
-		eventHandled = app->OnKey(get_key(wParam), InputState::kDown, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnKey(get_key(wParam), InputState::kDown, get_modifiers());
 		if (eventHandled)
 			app->Invalidate();
 		break;
 
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-		eventHandled = app->OnKey(get_key(wParam), InputState::kUp, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnKey(get_key(wParam), InputState::kUp, get_modifiers());
 		if (eventHandled)
 			app->Invalidate();
 		break;
@@ -145,7 +95,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		const int xPos = GET_X_LPARAM(lParam);
 		const int yPos = GET_Y_LPARAM(lParam);
 		const InputState iState = ((wParam & MK_LBUTTON) != 0) ? InputState::kDown : InputState::kUp;
-		eventHandled = app->OnMouse(xPos, yPos, iState, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouse(xPos, yPos, iState, get_modifiers());
 		if (eventHandled)
 			app->Invalidate();
 		break;
@@ -154,14 +104,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSEMOVE: {
 		const int xPos = GET_X_LPARAM(lParam);
 		const int yPos = GET_Y_LPARAM(lParam);
-		eventHandled = app->OnMouse(xPos, yPos, InputState::kMove, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouse(xPos, yPos, InputState::kMove, get_modifiers());
 		if (eventHandled)
 			app->Invalidate();
 		break;
 	}
 
 	case WM_MOUSEWHEEL:
-		eventHandled = app->OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? InputState::kZoomIn : InputState::kZoomOut, get_modifiers(message, wParam, lParam));
+		eventHandled = app->OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? InputState::kZoomIn : InputState::kZoomOut, get_modifiers());
 		break;
 
 	default:
