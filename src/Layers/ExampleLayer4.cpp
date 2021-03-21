@@ -8,10 +8,9 @@ void ExampleLayer4::Draw(SkCanvas* canvas)
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
 
-  const char* fontFamily = nullptr;  // Default system family, if it exists.
   SkFontStyle fontStyle;  // Default is normal weight, normal width,  upright slant.
   sk_sp<SkFontMgr> fontManager = SkFontMgr::RefDefault();
-  sk_sp<SkTypeface> typeface = fontManager->legacyMakeTypeface(fontFamily, fontStyle);
+  sk_sp<SkTypeface> typeface(fontManager->matchFamilyStyle(nullptr, fontStyle));
 
   SkFont font1(typeface, 64.0f, 1.0f, 0.0f);
   SkFont font2(typeface, 64.0f, 1.5f, 0.0f);
