@@ -10,7 +10,6 @@ public:
 
 	std::wstring GetTitle() const override { return L"Example #7: Load bitmap"; };
 	void Draw(SkCanvas* canvas) override;
-
 	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override;
 
 private:
