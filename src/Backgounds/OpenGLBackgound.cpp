@@ -43,11 +43,16 @@ OpenGLBackgound::OpenGLBackgound(WHandle handle) :
 {
 }
 
+OpenGLBackgound::~OpenGLBackgound()
+{
+	Destroy();
+}
+
 sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int widht, int height)
 {
-	HDC dc = GetDC(m_WHandle);
+	m_dc = GetDC(m_WHandle);
 
-	if (!(m_hRC = CreateWGLContext(dc)))
+	if (!(m_hRC = CreateWGLContext(m_dc)))
 		return nullptr;
 
 	glClearStencil(0);
@@ -87,6 +92,12 @@ void OpenGLBackgound::Destroy()
 	{
 		wglDeleteContext(m_hRC);
 		m_hRC = NULL;
+	}
+
+	if (m_dc)
+	{
+		ReleaseDC(m_WHandle, m_dc);
+		m_dc = NULL;
 	}
 }
 

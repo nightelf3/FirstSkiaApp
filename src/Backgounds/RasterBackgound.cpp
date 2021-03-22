@@ -6,6 +6,11 @@ RasterBackgound::RasterBackgound(WHandle handle) :
 {
 }
 
+RasterBackgound::~RasterBackgound()
+{
+	Destroy();
+}
+
 sk_sp<SkSurface> RasterBackgound::CreateSurface(int widht, int height)
 {
 	const size_t bmpSize = sizeof(BITMAPINFOHEADER) + widht * height * sizeof(uint32_t);

@@ -8,6 +8,7 @@
 
 struct IPlatformWindow
 {
+	virtual ~IPlatformWindow() = default;
 	virtual void Show() = 0;
 	virtual void Draw() = 0;
 	virtual sk_sp<SkSurface> Resize(int width, int height) = 0;
