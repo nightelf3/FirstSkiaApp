@@ -33,5 +33,7 @@ void ExampleLayer4::Draw(SkCanvas* canvas)
 	canvas->drawString("Skia", 200.0f, 424.0f, font2, paint3);
 
 	__super::Draw(canvas);
-	m_FPS.DrawFPS(canvas);
+
+	m_FPS.Calc();
+	m_FPS.Draw(canvas);
 }

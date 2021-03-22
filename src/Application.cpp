@@ -34,12 +34,14 @@ void Application::OnPaint()
 
 	m_Surface->flushAndSubmit();
 	SwapBuffers();
+
+	m_FPS.Calc();
+	UpdateTitle();
 }
 
 void Application::OnIdle()
 {
-	if (auto layer = m_Layers.Active())
-		layer->IsDrawOnIdle() ? Invalidate() : void();
+	Invalidate();
 }
 
 void Application::OnResize(int w, int h)
@@ -122,7 +124,13 @@ void Application::UpdateTitle()
 	}
 
 	if (auto layer = m_Layers.Active())
+	{
 		title.append(layer->GetTitle());
+		title.append(L" - ");
+	}
+
+	const SkString fps = m_FPS.Get();
+	title.append(std::wstring(fps.c_str(), fps.c_str() + strlen(fps.c_str())));
 
 	m_Window->SetTitle(std::move(title));
 }

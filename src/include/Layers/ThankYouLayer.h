@@ -13,7 +13,6 @@ public:
 	ThankYouLayer();
 	std::wstring GetTitle() const override { return L"Thank you for attention"; };
 	void Draw(SkCanvas* canvas) override;
-	bool IsDrawOnIdle() const override { return true; }
 
 private:
 	std::array<sk_sp<SkImage>, 4> m_Images;

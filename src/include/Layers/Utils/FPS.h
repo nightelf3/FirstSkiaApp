@@ -10,10 +10,13 @@ using std::chrono::time_point;
 class FPS
 {
 public:
-	void DrawFPS(SkCanvas* canvas);
+	void Calc();
+	void Draw(SkCanvas* canvas);
+	SkString Get() const;
 
 private:
-	time_point<system_clock> m_LastDraw = system_clock::now();
+	time_point<system_clock> m_LastCalc = system_clock::now();
+	double m_FPS = 0.0;
 };
 
 #endif // FPS_H_8E45E21C_B5A5_44F8_B239_BB6D493A0083

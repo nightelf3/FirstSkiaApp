@@ -4,6 +4,7 @@
 #include "Interfaces/IApplication.h"
 #include "Interfaces/IPlatformWindow.h"
 #include "LayerCollection.h"
+#include "Layers/Utils/FPS.h"
 
 class Application : public IApplication
 {
@@ -29,6 +30,7 @@ private:
 	std::unique_ptr<IPlatformWindow> m_Window;
 	LayerCollection m_Layers;
 	sk_sp<SkSurface> m_Surface;
+	FPS m_FPS;
 };
 
 #endif // APPLICAITON_H_79E41F56_5C03_42AE_A084_9058DBDEEE82
