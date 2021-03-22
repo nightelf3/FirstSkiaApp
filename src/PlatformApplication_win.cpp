@@ -1,6 +1,7 @@
 #include "include/core/SkCanvas.h"
 #include "include/Application.h"
 
+#include "include/Layers/ExampleLayer0.h"
 #include "include/Layers/ExampleLayer1.h"
 #include "include/Layers/ExampleLayer2.h"
 #include "include/Layers/ExampleLayer3.h"
@@ -23,6 +24,7 @@
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application app;
+	app.AddLayer(std::make_shared<ExampleLayer0>());
 	app.AddLayer(std::make_shared<ExampleLayer1>());
 	app.AddLayer(std::make_shared<ExampleLayer2>());
 	app.AddLayer(std::make_shared<ExampleLayer3>());

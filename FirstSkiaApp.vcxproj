@@ -48,6 +48,7 @@
     <ClInclude Include="src\include\Interfaces\IPlatformWindow.h" />
     <ClInclude Include="src\include\LayerCollection.h" />
     <ClInclude Include="src\include\Layers\BaseLayer.h" />
+    <ClInclude Include="src\include\Layers\ExampleLayer0.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer1.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer10.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer11.h" />

@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Header Files\Interfaces">
       <UniqueIdentifier>{7e7d6ce4-f55e-49f9-8348-b0ed6f9ded65}</UniqueIdentifier>
     </Filter>
@@ -204,6 +200,9 @@
       <Filter>Header Files\Layers\Utils</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\ThankYouLayer.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\ExampleLayer0.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
