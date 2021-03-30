@@ -16,24 +16,8 @@
     <ClCompile Include="src\Backgounds\RasterBackgound.cpp" />
     <ClCompile Include="src\LayerCollection.cpp" />
     <ClCompile Include="src\Application.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer1.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer10.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer11.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer12.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer13.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer14.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer15.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer2.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer3.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer4.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer5.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer6.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer7.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer8.cpp" />
-    <ClCompile Include="src\Layers\ExampleLayer9.cpp" />
-    <ClCompile Include="src\Layers\ThankYouLayer.cpp" />
+    <ClCompile Include="src\Layers\ExampleLayer.cpp" />
     <ClCompile Include="src\Layers\Utils\FPS.cpp" />
-    <ClCompile Include="src\Layers\Utils\RandomShapes.cpp" />
     <ClCompile Include="src\Layers\Utils\Utils.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
@@ -48,31 +32,11 @@
     <ClInclude Include="src\include\Interfaces\IPlatformWindow.h" />
     <ClInclude Include="src\include\LayerCollection.h" />
     <ClInclude Include="src\include\Layers\BaseLayer.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer0.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer1.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer10.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer11.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer12.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer13.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer14.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer15.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer2.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer3.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer4.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer5.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer6.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer7.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer8.h" />
-    <ClInclude Include="src\include\Layers\ExampleLayer9.h" />
-    <ClInclude Include="src\include\Layers\ThankYouLayer.h" />
+    <ClInclude Include="src\include\Layers\ExampleLayer.h" />
     <ClInclude Include="src\include\Layers\Utils\FPS.h" />
-    <ClInclude Include="src\include\Layers\Utils\RandomShapes.h" />
     <ClInclude Include="src\include\Layers\Utils\Utils.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\Application.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

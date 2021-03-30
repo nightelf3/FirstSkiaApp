@@ -11,7 +11,7 @@ namespace
 void FPS::Calc()
 {
 	const time_point<system_clock> now = system_clock::now();
-	m_FPS = period / std::max(duration_cast<TimeType>(now - m_LastCalc).count(), 60ll);
+	m_FPS = period / std::max(duration_cast<TimeType>(now - m_LastCalc).count(), 1ll);
 	m_LastCalc = now;
 }
 
