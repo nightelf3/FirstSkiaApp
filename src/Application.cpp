@@ -7,7 +7,7 @@
 Application::Application()
 {
 	m_Window = CreatePlatformWindow(this);
-	m_Window->SetBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
+	m_Window->SetBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
 }
 
 void Application::Show()
