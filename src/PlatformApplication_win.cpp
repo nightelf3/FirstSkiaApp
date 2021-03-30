@@ -1,13 +1,15 @@
 #include "include/core/SkCanvas.h"
 #include "include/Application.h"
 
-#include "include/Layers/ExampleLayer.h"
+#include "include/Layers/CustomGradient.h"
+#include "include/Layers/LinearGradient.h"
 #include <Windows.h>
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application app;
-	app.AddLayer(std::make_shared<ExampleLayer>());
+	app.AddLayer(std::make_shared<CustomGradient>());
+	app.AddLayer(std::make_shared<LinearGradient>());
 	app.Show();
 
 	MSG msg;

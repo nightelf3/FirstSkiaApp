@@ -44,9 +44,6 @@
     <ClCompile Include="src\PlatformApplication_win.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Layers\ExampleLayer.cpp">
-      <Filter>Source Files\Layers</Filter>
-    </ClCompile>
     <ClCompile Include="src\Layers\Utils\RandomShapes.cpp">
       <Filter>Source Files\Layers\Utils</Filter>
     </ClCompile>
@@ -64,6 +61,12 @@
     </ClCompile>
     <ClCompile Include="src\Layers\Utils\Utils.cpp">
       <Filter>Source Files\Layers\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\LinearGradient.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\CustomGradient.cpp">
+      <Filter>Source Files\Layers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -109,7 +112,10 @@
     <ClInclude Include="src\include\Layers\Utils\Utils.h">
       <Filter>Header Files\Layers\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\Layers\ExampleLayer.h">
+    <ClInclude Include="src\include\Layers\CustomGradient.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\LinearGradient.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
   </ItemGroup>
