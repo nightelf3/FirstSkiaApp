@@ -1,5 +1,4 @@
-#ifndef OPENGLBACKGROUND_H_7558918C_23B1_4BDA_9055_450D3308DED5
-#define OPENGLBACKGROUND_H_7558918C_23B1_4BDA_9055_450D3308DED5
+#pragma once
 
 #include "BaseBackgound.h"
 #include "include/gpu/gl/GrGLInterface.h"
@@ -22,5 +21,3 @@ protected:
 	sk_sp<GrDirectContext> m_Context;
 	sk_sp<const GrGLInterface> m_BackendContext;
 };
-
-#endif // OPENGLBACKGROUND_H_7558918C_23B1_4BDA_9055_450D3308DED5

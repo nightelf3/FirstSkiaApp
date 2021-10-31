@@ -1,5 +1,4 @@
-#ifndef EXAMPLELAYER0_H_40FC2ED3_321B_4018_ACE0_C45D5681E708
-#define EXAMPLELAYER0_H_40FC2ED3_321B_4018_ACE0_C45D5681E708
+#pragma once
 
 #include "BaseLayer.h"
 
@@ -13,5 +12,3 @@ public:
 private:
 	sk_sp<SkImage> m_Image;
 };
-
-#endif // EXAMPLELAYER0_H_40FC2ED3_321B_4018_ACE0_C45D5681E708

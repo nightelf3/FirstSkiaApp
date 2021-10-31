@@ -1,5 +1,4 @@
-#ifndef RASTERBACKGROUND_H_5CCB585C_8D82_46B0_B5CB_AC74862E5EFF
-#define RASTERBACKGROUND_H_5CCB585C_8D82_46B0_B5CB_AC74862E5EFF
+#pragma once
 
 #include "BaseBackgound.h"
 #include <vector>
@@ -18,5 +17,3 @@ public:
 protected:
 	std::vector<uint8_t> m_SurfaceMemory;
 };
-
-#endif // RASTERBACKGROUND_H_5CCB585C_8D82_46B0_B5CB_AC74862E5EFF

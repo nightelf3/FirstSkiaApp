@@ -1,5 +1,4 @@
-#ifndef BASEBACKGROUND_H_EBFC0D95_2CA0_4123_A180_8032569FAF4E
-#define BASEBACKGROUND_H_EBFC0D95_2CA0_4123_A180_8032569FAF4E
+#pragma once
 
 #include "include/Interfaces/IBackground.h"
 #include "include/Types.h"
@@ -12,5 +11,3 @@ public:
 protected:
 	WHandle m_WHandle;
 };
-
-#endif // BASEBACKGROUND_H_EBFC0D95_2CA0_4123_A180_8032569FAF4E
