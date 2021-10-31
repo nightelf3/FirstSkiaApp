@@ -19,6 +19,7 @@
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Layers\ExampleLayer.cpp" />
     <ClCompile Include="src\Layers\Utils\FPS.cpp" />
+    <ClCompile Include="src\Layers\Utils\Histogram.cpp" />
     <ClCompile Include="src\Layers\Utils\Utils.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
@@ -38,6 +39,7 @@
     <ClInclude Include="src\include\Layers\BaseLayer.h" />
     <ClInclude Include="src\include\Layers\ExampleLayer.h" />
     <ClInclude Include="src\include\Layers\Utils\FPS.h" />
+    <ClInclude Include="src\include\Layers\Utils\Histogram.h" />
     <ClInclude Include="src\include\Layers\Utils\Utils.h" />
     <ClInclude Include="src\include\Types.h" />
     <ClInclude Include="src\include\Application.h" />
