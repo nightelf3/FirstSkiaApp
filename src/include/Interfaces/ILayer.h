@@ -1,5 +1,4 @@
-#ifndef ILAYER_H_35EA475D_38E7_4303_A46E_270BBB4F1377
-#define ILAYER_H_35EA475D_38E7_4303_A46E_270BBB4F1377
+#pragma once
 
 #include "include/Types.h"
 #include "include/core/SkCanvas.h"
@@ -15,5 +14,3 @@ struct ILayer
 };
 
 using spLayer = std::shared_ptr<ILayer>;
-
-#endif // ILAYER_H_35EA475D_38E7_4303_A46E_270BBB4F1377

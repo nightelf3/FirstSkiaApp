@@ -1,5 +1,4 @@
-#ifndef IPLATFORMWINDOW_H_C00D52D7_AB05_4F18_9DB7_08A25594EF42
-#define IPLATFORMWINDOW_H_C00D52D7_AB05_4F18_9DB7_08A25594EF42
+#pragma once
 
 #include "IApplication.h"
 #include "IBackground.h"
@@ -20,5 +19,3 @@ struct IPlatformWindow
 };
 
 std::unique_ptr<IPlatformWindow> CreatePlatformWindow(IApplication* application);
-
-#endif // IPLATFORMWINDOW_H_C00D52D7_AB05_4F18_9DB7_08A25594EF42

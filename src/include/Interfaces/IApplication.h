@@ -1,5 +1,4 @@
-#ifndef IAPPLICATION_H_3F0DB7B2_BBFC_42DF_B3ED_03E7E81F937B
-#define IAPPLICATION_H_3F0DB7B2_BBFC_42DF_B3ED_03E7E81F937B
+#pragma once
 
 #include "ILayer.h"
 
@@ -18,5 +17,3 @@ struct IApplication
 	virtual void Invalidate() = 0;
 	virtual void SwapBuffers() = 0;
 };
-
-#endif // IAPPLICATION_H_3F0DB7B2_BBFC_42DF_B3ED_03E7E81F937B

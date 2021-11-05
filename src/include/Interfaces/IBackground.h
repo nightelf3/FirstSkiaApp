@@ -1,5 +1,4 @@
-#ifndef IBACKGROUND_H_4EDFBCC5_00F9_4767_AFFB_55E24608824D
-#define IBACKGROUND_H_4EDFBCC5_00F9_4767_AFFB_55E24608824D
+#pragma once
 
 #include "include/core/SkSurface.h"
 #include <string>
@@ -12,5 +11,3 @@ struct IBackground
 	virtual void Destroy() = 0;
 	virtual void SwapBuffers() = 0;
 };
-
-#endif // IBACKGROUND_H_4EDFBCC5_00F9_4767_AFFB_55E24608824D
