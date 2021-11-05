@@ -62,6 +62,9 @@
     <ClCompile Include="src\Layers\Utils\Utils.cpp">
       <Filter>Source Files\Layers\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="src\Controls\Slider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Types.h">
@@ -106,5 +109,14 @@
     <ClInclude Include="src\include\Layers\ExampleLayer.h">
       <Filter>Header Files\Layers</Filter>
     </ClInclude>
+    </ClInclude>
+      <Filter>Header Files</Filter>
+    <ClInclude Include="src\include\Controls\Slider.h">
+    </ClInclude>
+      <Filter>Header Files</Filter>
+    <ClInclude Include="src\include\Controls\BaseControl.h">
+    </ClInclude>
+      <Filter>Header Files</Filter>
+    <ClInclude Include="src\include\Interfaces\IControl.h">
   </ItemGroup>
 </Project>

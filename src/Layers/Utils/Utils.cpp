@@ -16,3 +16,8 @@ sk_sp<SkImage> LoadImageFromFile(const SkString& filePath)
 
 	return SkImage::MakeFromEncoded(std::move(skData));
 }
+
+bool IsPointInRect(SkScalar x, SkScalar y, const SkRect& rect)
+{
+	return rect.left() <= x && x <= rect.right() && rect.top() <= y && y <= rect.bottom();
+}

@@ -1,5 +1,6 @@
 #include "include/Layers/ExampleLayer.h"
 #include "include/Layers/Utils/Utils.h"
+#include "include/Controls/Slider.h"
 
 namespace
 {
@@ -17,6 +18,8 @@ namespace
 		bounds.fLeft = bounds.fRight - kPanelSize;
 		return bounds.makeInset(kPanelRadius, kPanelRadius);
 	}
+
+	Slider slider;
 }
 
 ExampleLayer::ExampleLayer()
@@ -33,7 +36,10 @@ void ExampleLayer::Draw(SkCanvas* canvas)
 	{  // draw the image
 		SkAutoCanvasRestore guard(canvas, true);
 		const SkRect imageRect = SkRect::MakeWH(m_Image->width(), m_Image->height());
-		canvas->setMatrix(SkMatrix::RectToRect(imageRect, GetDataRect(bounds), SkMatrix::kCenter_ScaleToFit));
+		const SkRect dataRect = GetDataRect(bounds);
+		SkMatrix matrix = SkMatrix::RectToRect(imageRect, dataRect, SkMatrix::kCenter_ScaleToFit);
+		matrix.postRotate(slider.GetValue() * 360.0f, dataRect.centerX(), dataRect.centerY());
+		canvas->setMatrix(matrix);
 		canvas->drawImage(m_Image, 0.0f, 0.0f);
 	}
 
@@ -48,5 +54,11 @@ void ExampleLayer::Draw(SkCanvas* canvas)
 		paint.setStyle(SkPaint::kStroke_Style);
 		canvas->drawRoundRect(panelRect, kPanelRadius, kPanelRadius, paint);
 
+		slider.Draw(canvas, SkRect::MakeXYWH(panelRect.left(), panelRect.top(), panelRect.width(), 20.0f));
 	}
+}
+
+bool ExampleLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+{
+	return slider.ProcessMouse(x, y, state, modifiers);
 }
