@@ -1,18 +1,6 @@
 #include "include/Layers/Utils/Histogram.h"
 
 #include "include/core/SkFont.h"
-#include <Windows.h>
-namespace
-{
-	constexpr size_t kChannelSize = 256;
-	constexpr size_t kChannelsCount = 4;
-	constexpr size_t kHistogramSize = kChannelsCount * kChannelSize;
-
-	constexpr size_t kMasterOffset = 0;
-	constexpr size_t kRedOffset = kChannelSize;
-	constexpr size_t kGreenOffset = kChannelSize * 2;
-	constexpr size_t kBlueOffset = kChannelSize * 3;
-}
 
 Histogram::Histogram(sk_sp<SkImage> image)
 {
@@ -30,7 +18,7 @@ bool Histogram::Initialize(sk_sp<SkImage> image)
 	if (!image->readPixels(nullptr, dstInfo, data->writable_data(), rowBytes, 0, 0))
 		return false;
 
-	Calc(data, static_cast<size_t>(image->width()), static_cast<size_t>(image->height()));
+	Calculate(data, static_cast<size_t>(image->width()), static_cast<size_t>(image->height()));
 	return true;
 }
 
@@ -39,26 +27,22 @@ void Histogram::Draw(SkCanvas* canvas)
 	m_FPS.Draw(canvas);
 }
 
-void Histogram::Calc(sk_sp<SkData> data, size_t width, size_t height)
+void Histogram::Calculate(sk_sp<SkData> data, size_t width, size_t height)
 {
 	m_FPS.Calc();
 
+	THistogram& histogram = *m_Histogram;
 	auto pixels = reinterpret_cast<const SkColor*>(data->bytes());
-	m_Histogram.resize(kHistogramSize, 0); // since we suport RGBA_8888 only
-	for (size_t i = 0; i < height; i++, pixels += width)
+	auto pixelsEnd = pixels + width * height;
+	for (; pixels != pixelsEnd; pixels++)
 	{
-		for (size_t j = 0; j < width; j++)
-		{
-			const SkColor color = pixels[j];
-			const uint16_t r = SkColorGetR(color);
-			const uint16_t g = SkColorGetG(color);
-			const uint16_t b = SkColorGetB(color);
-			m_Histogram[kMasterOffset + (r + g + b) / 3]++;
-			m_Histogram[kRedOffset + r]++;
-			m_Histogram[kGreenOffset + g]++;
-			m_Histogram[kBlueOffset + b]++;
-		}
+		histogram[kRed_Channel][SkColorGetR(*pixels)]++;
+		histogram[kGreen_Channel][SkColorGetG(*pixels)]++;
+		histogram[kBlue_Channel][SkColorGetB(*pixels)]++;
 	}
+
+	for (size_t i = 0; i < kChannelSize; i++)
+		histogram[kMaster_Channel][i] = histogram[kRed_Channel][i] + histogram[kGreen_Channel][i] + histogram[kBlue_Channel][i];
 
 	m_FPS.Calc();
 }

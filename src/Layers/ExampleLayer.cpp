@@ -1,4 +1,5 @@
 #include "include/Layers/ExampleLayer.h"
+#include "include/Layers/Utils/Histogram.h"
 #include "include/Layers/Utils/Utils.h"
 #include "include/Controls/Slider.h"
 
@@ -56,6 +57,9 @@ void ExampleLayer::Draw(SkCanvas* canvas)
 
 		slider.Draw(canvas, SkRect::MakeXYWH(panelRect.left(), panelRect.top(), panelRect.width(), 20.0f));
 	}
+
+	Histogram histogram(m_Image);
+	histogram.Draw(canvas);
 }
 
 bool ExampleLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
