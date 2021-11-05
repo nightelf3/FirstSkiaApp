@@ -48,7 +48,7 @@ OpenGLBackgound::~OpenGLBackgound()
 	Destroy();
 }
 
-sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int widht, int height)
+sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int width, int height)
 {
 	m_dc = GetDC(m_WHandle);
 
@@ -59,7 +59,7 @@ sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int widht, int height)
 	glClearColor(0, 0, 0, 0);
 	glStencilMask(0xffffffff);
 	glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, widht, height);
+	glViewport(0, 0, width, height);
 
 	m_BackendContext = GrGLMakeNativeInterface();
 	m_Context = GrDirectContext::MakeGL(m_BackendContext, {});
@@ -73,7 +73,7 @@ sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int widht, int height)
 
 	SkSurfaceProps props(0, kRGB_H_SkPixelGeometry);
 
-	GrBackendRenderTarget backendRT(widht, height, nSampleCount, nStencilBits, fbInfo);
+	GrBackendRenderTarget backendRT(std::max(width, 1), std::max(height, 1), nSampleCount, nStencilBits, fbInfo);
 	return SkSurface::MakeFromBackendRenderTarget(m_Context.get(), backendRT,
 		kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, nullptr, &props);
 }
