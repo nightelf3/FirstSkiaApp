@@ -49,34 +49,74 @@ namespace
 		canvas->drawRect(bounds, paint);
 	}
 
+	SkFont GetFont()
+	{
+		sk_sp<SkFontMgr> fontManager = SkFontMgr::RefDefault();
+		sk_sp<SkTypeface> typeface(fontManager->matchFamilyStyle(nullptr, {}));
+		return SkFont{typeface, 11};
+	}
+
+	void DrawSimpleText(SkCanvas* canvas, const SkString& str, const SkPoint& pt, const SkPaint& paint)
+	{
+		const SkFont font = GetFont();
+		canvas->drawSimpleText(str.c_str(), str.size(), SkTextEncoding::kUTF8, pt.x(), pt.y(), font, paint);
+	}
+
+	SkSize GetTextSize(const SkString& str, SkPaint* paint = nullptr)
+	{
+		const SkFont font = GetFont();
+		SkRect measure;
+		font.measureText(str.c_str(), str.size(), SkTextEncoding::kUTF8, &measure, paint);
+		return SkSize::Make(measure.width(), measure.height());
+	}
+
+	SkPoint GetTextPoint(const SkString& str, const SkRect& rect, SkScalar xOffset, SkPaint* paint = nullptr)
+	{
+		const SkSize textSize = GetTextSize(str, paint);
+		return SkPoint::Make(rect.x() + xOffset, rect.bottom() - (rect.height() - textSize.height()) / 2.0f);
+	}
+
+	SkString ToString(SkScalar value)
+	{
+		SkString str;
+		str.printf("%.3f", value);
+		return str;
+	}
+
 	void DrawEditBox(SkCanvas* canvas, const SkRect& bounds, SkScalar value, bool bActive)
 	{
 		DrawRectAndOutline(canvas, bounds, SkColors::kWhite, bActive);
 
-		SkString str;
-		str.printf("%.3f", value);
-
 		SkPaint paint;
+		paint.setAntiAlias(true);
 		paint.setColor(SkColors::kBlack);
-
-		sk_sp<SkFontMgr> fontManager = SkFontMgr::RefDefault();
-		sk_sp<SkTypeface> typeface(fontManager->matchFamilyStyle(nullptr, {}));
-		SkFont font(typeface, 11);
-
-		SkRect measure;
-		font.measureText(str.c_str(), str.size(), SkTextEncoding::kUTF8, &measure, &paint);
-		canvas->drawSimpleText(str.c_str(), str.size(), SkTextEncoding::kUTF8, bounds.x() + kEditTextPadding, bounds.bottom() - (bounds.height() - measure.height()) / 2.0f, font, paint);
+		const SkString str = ToString(value);
+		DrawSimpleText(canvas, str, GetTextPoint(str, bounds, kEditTextPadding, &paint), paint);
 	}
 }
 
+Slider::Slider(SkString caption) :
+	m_Caption(std::move(caption))
+{
+}
 
 void Slider::Draw(SkCanvas* canvas, const SkRect& bounds)
 {
-	DrawRectAndOutline(canvas, GetTrackRect(bounds), SkColors::kGray, m_Active);
-	DrawRectAndOutline(canvas, GetThumbRect(bounds, GetValue()), SkColors::kGray, m_Active);
-	DrawEditBox(canvas, GetEditRect(bounds), GetValue(), m_Active);
+	SkRect trackBounds = bounds;
+	if (!m_Caption.isEmpty())
+	{
+		SkPaint paint;
+		paint.setAntiAlias(true);
+		paint.setColor(SkColors::kBlack);
+		DrawSimpleText(canvas, m_Caption, GetTextPoint(m_Caption, bounds, kEditTextPadding, &paint), paint);
+		trackBounds.fLeft += GetTextSize(m_Caption).width() + kEditPadding;
+	}
 
-	return __super::Draw(canvas, bounds);
+	DrawRectAndOutline(canvas, GetTrackRect(trackBounds), SkColors::kGray, m_Active);
+	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue()), SkColors::kGray, m_Active);
+	DrawEditBox(canvas, GetEditRect(trackBounds), GetValue(), m_Active);
+
+	return __super::Draw(canvas, trackBounds);
 }
 
 bool Slider::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
@@ -104,4 +144,9 @@ bool Slider::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 	}
 
 	return true;
+}
+
+SkScalar Slider::GetHeight() const
+{
+	return kThumbHeight;
 }

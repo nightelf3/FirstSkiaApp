@@ -3,8 +3,7 @@
 #include "include/Interfaces/IControl.h"
 #include "include/Layers/Utils/Utils.h"
 
-template<typename T>
-class BaseControl : public IControl
+class BaseValueControl : public IControlValue
 {
 public:
 	void Draw(SkCanvas* canvas, const SkRect& bounds)
@@ -17,8 +16,8 @@ public:
 		return IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);
 	}
 
-	T GetValue() const { return m_Value; }
-	void SetValue(T value) { m_Value = std::move(value); }
+	SkScalar GetValue() const { return m_Value; }
+	void SetValue(SkScalar value) { m_Value = std::move(value); }
 
 protected:
 	SkRect GetBounds() const { return m_Bounds; }
@@ -37,5 +36,5 @@ protected:
 
 private:
 	SkRect m_Bounds;
-	T m_Value = T{};
+	SkScalar m_Value = 0.0f;
 };

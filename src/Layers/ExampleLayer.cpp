@@ -5,26 +5,19 @@
 namespace
 {
 	constexpr SkScalar kPanelSize = 300.0f;  // in px
-	constexpr SkScalar kPanelRadius = 10.0f;  // in px
-
-	SkRect GetDataRect(SkRect bounds)
-	{
-		bounds.fRight -= kPanelSize;
-		return bounds;
-	}
+	constexpr SkScalar kPanelPadding = 10.0f;  // in px
 
 	SkRect GetPanelRect(SkRect bounds)
 	{
 		bounds.fLeft = bounds.fRight - kPanelSize;
-		return bounds.makeInset(kPanelRadius, kPanelRadius);
+		return bounds.makeInset(kPanelPadding, kPanelPadding);
 	}
-
-	Slider slider;
 }
 
 ExampleLayer::ExampleLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
+	m_RotateSlider = m_Container.AddControl<Slider>(SkString{"Rotate:"});\
 }
 
 void ExampleLayer::Draw(SkCanvas* canvas)
@@ -36,29 +29,17 @@ void ExampleLayer::Draw(SkCanvas* canvas)
 	{  // draw the image
 		SkAutoCanvasRestore guard(canvas, true);
 		const SkRect imageRect = SkRect::MakeWH(m_Image->width(), m_Image->height());
-		const SkRect dataRect = GetDataRect(bounds);
-		SkMatrix matrix = SkMatrix::RectToRect(imageRect, dataRect, SkMatrix::kCenter_ScaleToFit);
-		matrix.postRotate(slider.GetValue() * 360.0f, dataRect.centerX(), dataRect.centerY());
+		SkMatrix matrix = SkMatrix::RectToRect(imageRect, bounds, SkMatrix::kCenter_ScaleToFit);
+		matrix.postRotate(m_RotateSlider.lock()->GetValue() * 360.0f, bounds.centerX(), bounds.centerY());
 		canvas->setMatrix(matrix);
 		canvas->drawImage(m_Image, 0.0f, 0.0f);
 	}
 
-	{  // draw the panel
-		SkPaint paint;
-		paint.setColor(SkColors::kDkGray);
-		paint.setStyle(SkPaint::kFill_Style);
-		const SkRect panelRect = GetPanelRect(bounds);
-		canvas->drawRoundRect(panelRect, kPanelRadius, kPanelRadius, paint);
-
-		paint.setColor(SkColors::kGray);
-		paint.setStyle(SkPaint::kStroke_Style);
-		canvas->drawRoundRect(panelRect, kPanelRadius, kPanelRadius, paint);
-
-		slider.Draw(canvas, SkRect::MakeXYWH(panelRect.left(), panelRect.top(), panelRect.width(), 20.0f));
-	}
+	// draw controls
+	m_Container.Draw(canvas, GetPanelRect(bounds));
 }
 
 bool ExampleLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
-	return slider.ProcessMouse(x, y, state, modifiers);
+	return m_Container.ProcessMouse(x, y, state, modifiers);
 }

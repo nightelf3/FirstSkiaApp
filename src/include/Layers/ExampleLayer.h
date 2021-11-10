@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseLayer.h"
+#include "include/Controls/ControlsContainer.h"
 
 class ExampleLayer final : public BaseLayer
 {
@@ -12,4 +13,7 @@ public:
 
 private:
 	sk_sp<SkImage> m_Image;
+
+	ControlsContainer m_Container;
+	std::weak_ptr<IControlValue> m_RotateSlider;
 };

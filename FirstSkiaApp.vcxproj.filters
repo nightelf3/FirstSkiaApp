@@ -1,122 +1,121 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Header Files\Interfaces">
-      <UniqueIdentifier>{7e7d6ce4-f55e-49f9-8348-b0ed6f9ded65}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Layers">
-      <UniqueIdentifier>{0d8b512a-ac28-46c3-93b8-a9466a78d70d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Layers">
-      <UniqueIdentifier>{92f8e6f1-da65-4f68-81d5-00f527903f37}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Layers\Utils">
-      <UniqueIdentifier>{54d3a124-d289-480c-b7c3-56834fc5ba10}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Layers\Utils">
-      <UniqueIdentifier>{8c3fb82b-ca49-434e-b500-0d094b82a52e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Backgounds">
-      <UniqueIdentifier>{8a42a195-ab0f-4efa-8818-bae66c0a2080}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Backgounds">
-      <UniqueIdentifier>{25b4f355-b278-491b-aba7-05c539279c81}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\Application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\LayerCollection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PlatformWindow_win.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PlatformApplication_win.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Layers\ExampleLayer.cpp">
-      <Filter>Source Files\Layers</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Layers\Utils\FPS.cpp">
-      <Filter>Source Files\Layers\Utils</Filter>
-    </ClCompile>
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\LayerCollection.cpp" />
+    <ClCompile Include="src\PlatformApplication_win.cpp" />
+    <ClCompile Include="src\PlatformWindow_win.cpp" />
     <ClCompile Include="src\Backgounds\BaseBackgound.cpp">
-      <Filter>Source Files\Backgounds</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Backgounds\RasterBackgound.cpp">
-      <Filter>Source Files\Backgounds</Filter>
+      <Filter>Backgounds</Filter>
     </ClCompile>
     <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp">
-      <Filter>Source Files\Backgounds</Filter>
+      <Filter>Backgounds</Filter>
     </ClCompile>
-    <ClCompile Include="src\Layers\Utils\Utils.cpp">
-      <Filter>Source Files\Layers\Utils</Filter>
+    <ClCompile Include="src\Backgounds\RasterBackgound.cpp">
+      <Filter>Backgounds</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Controls\ControlsContainer.cpp">
+      <Filter>Controls</Filter>
     </ClCompile>
     <ClCompile Include="src\Controls\Slider.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\ExampleLayer.cpp">
+      <Filter>Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\Utils\FPS.cpp">
+      <Filter>Layers\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Layers\Utils\Utils.cpp">
+      <Filter>Layers\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\include\Types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\LayerCollection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Interfaces\IApplication.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Interfaces\ILayer.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Interfaces\IPlatformWindow.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Layers\BaseLayer.h">
-      <Filter>Header Files\Layers</Filter>
-    </ClInclude>
     <ClInclude Include="src\include\Layers\Utils\FPS.h">
-      <Filter>Header Files\Layers\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Interfaces\IBackground.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Backgounds\BaseBackgound.h">
-      <Filter>Header Files\Backgounds</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Backgounds\RasterBackgound.h">
-      <Filter>Header Files\Backgounds</Filter>
-    </ClInclude>
-    <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h">
-      <Filter>Header Files\Backgounds</Filter>
+      <Filter>include\Layers\Utils</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\Utils\Utils.h">
-      <Filter>Header Files\Layers\Utils</Filter>
+      <Filter>include\Layers\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\IApplication.h">
+      <Filter>include\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\IBackground.h">
+      <Filter>include\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\IControl.h">
+      <Filter>include\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\ILayer.h">
+      <Filter>include\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Interfaces\IPlatformWindow.h">
+      <Filter>include\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Layers\BaseLayer.h">
+      <Filter>include\Layers</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\ExampleLayer.h">
-      <Filter>Header Files\Layers</Filter>
+      <Filter>include\Layers</Filter>
     </ClInclude>
+    <ClInclude Include="src\include\Backgounds\BaseBackgound.h">
+      <Filter>include\Backgrounds</Filter>
     </ClInclude>
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\include\Application.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Controls\BaseValueControl.h">
+      <Filter>include\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Controls\ControlsContainer.h">
+      <Filter>include\Controls</Filter>
+    </ClInclude>
     <ClInclude Include="src\include\Controls\Slider.h">
+      <Filter>include\Controls</Filter>
     </ClInclude>
-      <Filter>Header Files</Filter>
-    <ClInclude Include="src\include\Controls\BaseControl.h">
+    <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h">
+      <Filter>include\Backgrounds</Filter>
     </ClInclude>
-      <Filter>Header Files</Filter>
-    <ClInclude Include="src\include\Interfaces\IControl.h">
+    <ClInclude Include="src\include\Backgounds\RasterBackgound.h">
+      <Filter>include\Backgrounds</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\LayerCollection.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Types.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Backgounds">
+      <UniqueIdentifier>{b921775f-f1a8-4afd-8651-b5332f179c74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controls">
+      <UniqueIdentifier>{84e56d15-00f7-4af1-a493-1c3d5f462189}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Layers">
+      <UniqueIdentifier>{865b212c-75c2-4ff9-98c7-a668f2d385b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Layers\Utils">
+      <UniqueIdentifier>{e4c62eb9-9a05-4033-973f-20515c7636d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{2b1b7981-68eb-4ac6-bdbe-795e457cabb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\Backgrounds">
+      <UniqueIdentifier>{7131f076-21c7-4383-adb2-0c11377b7ea9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\Controls">
+      <UniqueIdentifier>{d15ef27b-4741-4331-aaa7-9ea407f922c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\Interfaces">
+      <UniqueIdentifier>{eb1aebee-027b-46f9-8107-94d23dfcba36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\Layers">
+      <UniqueIdentifier>{f10b5197-26d8-4f83-b2e1-5eb4dee4f511}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\Layers\Utils">
+      <UniqueIdentifier>{73bb3976-da76-4b6e-a332-6e6af927d7f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
