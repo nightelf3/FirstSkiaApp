@@ -6,6 +6,11 @@
 class BaseValueControl : public IControlValue
 {
 public:
+	BaseValueControl(SkScalar defValue = 0.0f) :
+		m_Value(defValue)
+	{
+	}
+
 	void Draw(SkCanvas* canvas, const SkRect& bounds)
 	{
 		m_Bounds = bounds;

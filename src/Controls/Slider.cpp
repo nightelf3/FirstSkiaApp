@@ -95,7 +95,8 @@ namespace
 	}
 }
 
-Slider::Slider(SkString caption) :
+Slider::Slider(SkScalar defValue, SkString caption) :
+	BaseValueControl(defValue),
 	m_Caption(std::move(caption))
 {
 }

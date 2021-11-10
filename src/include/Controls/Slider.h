@@ -6,7 +6,7 @@
 class Slider : public BaseValueControl
 {
 public:
-	Slider(SkString caption = {});
+	Slider(SkScalar defValue = 0.0f, SkString caption = {});
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;

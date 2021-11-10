@@ -2,6 +2,7 @@
 
 #include "BaseLayer.h"
 #include "include/Controls/ControlsContainer.h"
+#include "include/effects/SkRuntimeEffect.h"
 
 class ExampleLayer final : public BaseLayer
 {
@@ -13,7 +14,13 @@ public:
 
 private:
 	sk_sp<SkImage> m_Image;
+	sk_sp<SkRuntimeEffect> m_Effect;
 
 	ControlsContainer m_Container;
-	std::weak_ptr<IControlValue> m_RotateSlider;
+	std::weak_ptr<IControlValue> m_RedSlider;
+	std::weak_ptr<IControlValue> m_YellowSlider;
+	std::weak_ptr<IControlValue> m_GreenSlider;
+	std::weak_ptr<IControlValue> m_CyanSlider;
+	std::weak_ptr<IControlValue> m_BlueSlider;
+	std::weak_ptr<IControlValue> m_MagentaSlider;
 };
