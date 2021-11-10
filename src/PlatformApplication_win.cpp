@@ -1,13 +1,15 @@
 #include "include/core/SkCanvas.h"
 #include "include/Application.h"
 
-#include "include/Layers/ExampleLayer.h"
+#include "include/Layers/SwirlLayer.h"
+#include "include/Layers/BlackAndWhiteLayer.h"
 #include <Windows.h>
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application app;
-	app.AddLayer(std::make_shared<ExampleLayer>());
+	app.AddLayer(std::make_shared<SwirlLayer>());
+	app.AddLayer(std::make_shared<BlackAndWhiteLayer>());
 	app.Show();
 
 	MSG msg;

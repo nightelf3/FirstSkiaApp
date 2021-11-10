@@ -4,11 +4,11 @@
 #include "include/Controls/ControlsContainer.h"
 #include "include/effects/SkRuntimeEffect.h"
 
-class ExampleLayer final : public BaseLayer
+class BlackAndWhiteLayer final : public BaseLayer
 {
 public:
-	ExampleLayer();
-	std::wstring GetTitle() const override { return L"Example"; };
+	BlackAndWhiteLayer();
+	std::wstring GetTitle() const override { return L"Black & White"; };
 	void Draw(SkCanvas* canvas) override;
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
 

@@ -1,4 +1,4 @@
-#include "include/Layers/ExampleLayer.h"
+#include "include/Layers/BlackAndWhiteLayer.h"
 #include "include/Layers/Utils/Utils.h"
 #include "include/Controls/Slider.h"
 
@@ -127,7 +127,7 @@ namespace
 	}
 }
 
-ExampleLayer::ExampleLayer()
+BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
 
@@ -138,13 +138,13 @@ ExampleLayer::ExampleLayer()
 	m_BlueSlider = m_Container.AddControl<Slider>(GetSliderValue(20.0f), SkString{"Blue:"});
 	m_MagentaSlider = m_Container.AddControl<Slider>(GetSliderValue(80.0f), SkString{"Magenta:"});
 
-	const SkRuntimeEffect::Result effect = SkRuntimeEffect::Make(SkString(BW_SHADER.c_str()));
+	const SkRuntimeEffect::Result effect = SkRuntimeEffect::Make(SkString{BW_SHADER.c_str()});
 	if (!effect.effect)
 		std::cerr << effect.errorText.c_str();
 	m_Effect = effect.effect;
 }
 
-void ExampleLayer::Draw(SkCanvas* canvas)
+void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 {
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
@@ -173,7 +173,7 @@ void ExampleLayer::Draw(SkCanvas* canvas)
 	m_Container.Draw(canvas, GetPanelRect(bounds));
 }
 
-bool ExampleLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+bool BlackAndWhiteLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
 	return m_Container.ProcessMouse(x, y, state, modifiers);
 }
