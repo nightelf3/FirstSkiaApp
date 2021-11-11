@@ -53,10 +53,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_PAINT:
 	{
-		PAINTSTRUCT ps;
-		BeginPaint(hWnd, &ps);
 		app->OnPaint();
-		EndPaint(hWnd, &ps);
 		eventHandled = true;
 		break;
 	}
