@@ -40,7 +40,7 @@ namespace
 		}
 
 		half4 main(float2 p) {
-			half3 base = sample(texture, p).rgb;
+			half3 base = texture.eval(p).rgb;
 			base = rgb2hsv(base);
 
 			float hueInterval = 1.0 / 6.0;
@@ -138,7 +138,7 @@ BlackAndWhiteLayer::BlackAndWhiteLayer()
 	m_BlueSlider = m_Container.AddControl<Slider>(GetSliderValue(20.0f), SkString{"Blue:"});
 	m_MagentaSlider = m_Container.AddControl<Slider>(GetSliderValue(80.0f), SkString{"Magenta:"});
 
-	const SkRuntimeEffect::Result effect = SkRuntimeEffect::Make(SkString{BW_SHADER.c_str()});
+	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{BW_SHADER.c_str()});
 	if (!effect.effect)
 		std::cerr << effect.errorText.c_str();
 	m_Effect = effect.effect;

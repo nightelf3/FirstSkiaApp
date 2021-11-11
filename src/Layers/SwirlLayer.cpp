@@ -39,10 +39,10 @@ namespace
 			}
 			else
 			{
-				pixel = p;
+				pixel = float2(p.x / width, p.y / height);
 			}
 
-			return sample(texture, float2(pixel.x * width, pixel.y * height));
+			return texture.eval(float2(pixel.x * width, pixel.y * height));
 		})---";
 
 	struct SwirlParameters
@@ -92,7 +92,7 @@ SwirlLayer::SwirlLayer()
 	m_RadiusSlider = m_Container.AddControl<Slider>(0.75f, SkString{"Radius:"});
 	m_TwistsSlider = m_Container.AddControl<Slider>(GetSliderValue(0.5f), SkString{"Twists:"});
 
-	const SkRuntimeEffect::Result effect = SkRuntimeEffect::Make(SkString{SWIRL_SHADER.c_str()});
+	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{SWIRL_SHADER.c_str()});
 	if (!effect.effect)
 		std::cerr << effect.errorText.c_str();
 	m_Effect = effect.effect;
