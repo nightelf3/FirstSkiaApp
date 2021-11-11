@@ -3,10 +3,13 @@
 #include "include/gpu/GrContextOptions.h"
 #include "src/gpu/gl/GrGLDefines.h"
 #include "src/utils/win/SkWGL.h"
-#include <GL/GL.h>
+
+#include <gl/GL.h>
 
 namespace
 {
+	constexpr bool kDisableVSync = false;
+
 	constexpr int nSampleCount = 1;
 	constexpr int nStencilBits = 8;
 
@@ -60,6 +63,14 @@ sk_sp<SkSurface> OpenGLBackgound::CreateSurface(int width, int height)
 	glStencilMask(0xffffffff);
 	glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width, height);
+
+	if (kDisableVSync)
+	{
+		// provide the ability to disable FPS limit
+		using FNWGLSWAPINTERVALPROC = BOOL(int);
+		if (auto fnSetInterval = reinterpret_cast<FNWGLSWAPINTERVALPROC*>(wglGetProcAddress("wglSwapIntervalEXT")))
+			fnSetInterval(0);
+	}
 
 	m_BackendContext = GrGLMakeNativeInterface();
 	m_Context = GrDirectContext::MakeGL(m_BackendContext, {});
