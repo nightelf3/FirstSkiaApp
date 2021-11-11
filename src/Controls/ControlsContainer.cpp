@@ -36,12 +36,10 @@ void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 
 bool ControlsContainer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
+	bool processed = false;
 	for (auto& control : m_Controls)
-	{
-		if (control->ProcessMouse(x, y, state, modifiers))
-			return true;
-	}
-	return false;
+		processed |= control->ProcessMouse(x, y, state, modifiers);
+	return processed;
 }
 
 SkScalar ControlsContainer::GetHeight() const
