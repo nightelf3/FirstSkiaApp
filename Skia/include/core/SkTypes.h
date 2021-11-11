@@ -236,7 +236,11 @@
 #  define SK_SUPPORT_GPU 1
 #endif
 
-#if !SK_SUPPORT_GPU
+#if SK_SUPPORT_GPU || SK_GRAPHITE_ENABLED
+#  if !defined(SK_ENABLE_SKSL)
+#    define SK_ENABLE_SKSL
+#  endif
+#else
 #  undef SK_GL
 #  undef SK_VULKAN
 #  undef SK_METAL
@@ -334,6 +338,14 @@
 #  endif
 #endif
 
+#if !defined(SK_MAYBE_UNUSED)
+#  if defined(__clang__) || defined(__GNUC__)
+#    define SK_MAYBE_UNUSED [[maybe_unused]]
+#  else
+#    define SK_MAYBE_UNUSED
+#  endif
+#endif
+
 /**
  * If your judgment is better than the compiler's (i.e. you've profiled it),
  * you can use SK_ALWAYS_INLINE to force inlining. E.g.
@@ -388,6 +400,10 @@
 #  define GR_TEST_UTILS 0
 #endif
 
+#ifndef SK_GPU_V1
+#  define SK_GPU_V1 1
+#endif
+
 #if defined(SK_HISTOGRAM_ENUMERATION)  || \
     defined(SK_HISTOGRAM_BOOLEAN)      || \
     defined(SK_HISTOGRAM_EXACT_LINEAR) || \
@@ -437,10 +453,7 @@
 [[noreturn]] SK_API extern void sk_abort_no_print(void);
 
 #ifndef SkDebugf
-    SK_API void SkDebugf(const char format[], ...);
-#endif
-#if defined(SK_BUILD_FOR_LIBFUZZER)
-    SK_API inline void SkDebugf(const char format[], ...) {}
+    SK_API void SkDebugf(const char format[], ...) SK_PRINTF_LIKE(1, 2);
 #endif
 
 // SkASSERT, SkASSERTF and SkASSERT_RELEASE can be used as stand alone assertion expressions, e.g.
@@ -538,6 +551,15 @@ template <typename T> static constexpr T SkAlignPtr(T x) {
 }
 template <typename T> static constexpr bool SkIsAlignPtr(T x) {
     return sizeof(void*) == 8 ? SkIsAlign8(x) : SkIsAlign4(x);
+}
+
+/**
+ *  align up to a power of 2
+ */
+static inline constexpr size_t SkAlignTo(size_t x, size_t alignment) {
+    // The same as alignment && SkIsPow2(value), w/o a dependency cycle.
+    SkASSERT(alignment && (alignment & (alignment - 1)) == 0);
+    return (x + alignment - 1) & ~(alignment - 1);
 }
 
 typedef uint32_t SkFourByteTag;

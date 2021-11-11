@@ -74,6 +74,7 @@ protected:
     void onDrawPicture(const SkPicture*, const SkMatrix*, const SkPaint*) override;
     void onDrawDrawable(SkDrawable*, const SkMatrix*) override;
 
+    void onDrawGlyphRunList(const SkGlyphRunList&, const SkPaint&) override;
     void onDrawTextBlob(const SkTextBlob* blob, SkScalar x, SkScalar y,
                         const SkPaint& paint) override;
     void onDrawAnnotation(const SkRect& rect, const char key[], SkData* value) override;
@@ -96,7 +97,6 @@ private:
 
     SkCanvas* proxy() const { SkASSERT(fList.count() == 1); return fList[0]; }
 
-    GrSurfaceDrawContext* topDeviceSurfaceDrawContext() override;
     SkPaintFilterCanvas* internal_private_asPaintFilterCanvas() const override {
         return const_cast<SkPaintFilterCanvas*>(this);
     }

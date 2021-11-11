@@ -24,18 +24,18 @@ class GrMtlPipelineState;
 class SkReadBuffer;
 
 struct GrMtlPrecompiledLibraries {
-    // TODO: wrap this in sk_cfp<> or unique_ptr<> when we remove ARC
-    id<MTLRenderPipelineState> fPipelineState;
-    bool fRTHeight = false;
+    // TODO: wrap these in sk_cfp<> or unique_ptr<> when we remove ARC
+    id<MTLLibrary> fVertexLibrary;
+    id<MTLLibrary> fFragmentLibrary;
+    bool fRTFlip = false;
 };
 
 class GrMtlPipelineStateBuilder : public GrGLSLProgramBuilder {
 public:
     /** Generates a pipeline state.
      *
-     * The GrMtlPipelineState implements what is specified in the GrPipeline and
-     * GrPrimitiveProcessor as input. After successful generation, the builder result objects are
-     * available to be used.
+     * The returned GrMtlPipelineState implements the supplied GrProgramInfo.
+     *
      * @return the created pipeline if generation was successful; nullptr otherwise
      */
     static GrMtlPipelineState* CreatePipelineState(

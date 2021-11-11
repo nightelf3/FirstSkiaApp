@@ -18,14 +18,12 @@
 namespace SkSL {
 
 #if defined(SKSL_STANDALONE) || !SK_SUPPORT_GPU
-StandaloneShaderCaps standaloneCaps;
-
 ShaderCapsPointer ShaderCapsFactory::MakeShaderCaps() {
-    return std::make_shared<StandaloneShaderCaps>();
+    return std::make_unique<StandaloneShaderCaps>();
 }
 #else
 ShaderCapsPointer ShaderCapsFactory::MakeShaderCaps() {
-    return sk_make_sp<GrShaderCaps>(GrContextOptions());
+    return std::make_unique<GrShaderCaps>();
 }
 #endif  // defined(SKSL_STANDALONE) || !SK_SUPPORT_GPU
 
@@ -33,24 +31,16 @@ void write_stringstream(const StringStream& s, OutputStream& out) {
     out.write(s.str().c_str(), s.str().size());
 }
 
-#if !defined(SKSL_STANDALONE)
+#if !defined(SKSL_STANDALONE) && SK_SUPPORT_GPU
 bool type_to_grsltype(const Context& context, const Type& type, GrSLType* outType) {
     // If a new GrSL type is added, this function will need to be updated.
-    static_assert(kGrSLTypeCount == 49);
+    static_assert(kGrSLTypeCount == 41);
 
     if (type == *context.fTypes.fVoid    ) { *outType = kVoid_GrSLType;     return true; }
     if (type == *context.fTypes.fBool    ) { *outType = kBool_GrSLType;     return true; }
     if (type == *context.fTypes.fBool2   ) { *outType = kBool2_GrSLType;    return true; }
     if (type == *context.fTypes.fBool3   ) { *outType = kBool3_GrSLType;    return true; }
     if (type == *context.fTypes.fBool4   ) { *outType = kBool4_GrSLType;    return true; }
-    if (type == *context.fTypes.fByte    ) { *outType = kByte_GrSLType;     return true; }
-    if (type == *context.fTypes.fByte2   ) { *outType = kByte2_GrSLType;    return true; }
-    if (type == *context.fTypes.fByte3   ) { *outType = kByte3_GrSLType;    return true; }
-    if (type == *context.fTypes.fByte4   ) { *outType = kByte4_GrSLType;    return true; }
-    if (type == *context.fTypes.fUByte   ) { *outType = kUByte_GrSLType;    return true; }
-    if (type == *context.fTypes.fUByte2  ) { *outType = kUByte2_GrSLType;   return true; }
-    if (type == *context.fTypes.fUByte3  ) { *outType = kUByte3_GrSLType;   return true; }
-    if (type == *context.fTypes.fUByte4  ) { *outType = kUByte4_GrSLType;   return true; }
     if (type == *context.fTypes.fShort   ) { *outType = kShort_GrSLType;    return true; }
     if (type == *context.fTypes.fShort2  ) { *outType = kShort2_GrSLType;   return true; }
     if (type == *context.fTypes.fShort3  ) { *outType = kShort3_GrSLType;   return true; }
@@ -77,10 +67,10 @@ bool type_to_grsltype(const Context& context, const Type& type, GrSLType* outTyp
     if (type == *context.fTypes.fInt2    ) { *outType = kInt2_GrSLType;     return true; }
     if (type == *context.fTypes.fInt3    ) { *outType = kInt3_GrSLType;     return true; }
     if (type == *context.fTypes.fInt4    ) { *outType = kInt4_GrSLType;     return true; }
-    if (type == *context.fTypes.fUInt    ) { *outType = kUint_GrSLType;     return true; }
-    if (type == *context.fTypes.fUInt2   ) { *outType = kUint2_GrSLType;    return true; }
-    if (type == *context.fTypes.fUInt3   ) { *outType = kUint3_GrSLType;    return true; }
-    if (type == *context.fTypes.fUInt4   ) { *outType = kUint4_GrSLType;    return true; }
+    if (type == *context.fTypes.fUInt    ) { *outType = kUInt_GrSLType;     return true; }
+    if (type == *context.fTypes.fUInt2   ) { *outType = kUInt2_GrSLType;    return true; }
+    if (type == *context.fTypes.fUInt3   ) { *outType = kUInt3_GrSLType;    return true; }
+    if (type == *context.fTypes.fUInt4   ) { *outType = kUInt4_GrSLType;    return true; }
     return false;
 }
 #endif

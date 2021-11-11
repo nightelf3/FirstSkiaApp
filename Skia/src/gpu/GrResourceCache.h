@@ -9,6 +9,7 @@
 #define GrResourceCache_DEFINED
 
 #include "include/core/SkRefCnt.h"
+#include "include/gpu/GrDirectContext.h"
 #include "include/private/GrResourceKey.h"
 #include "include/private/SkTArray.h"
 #include "include/private/SkTHash.h"
@@ -30,13 +31,12 @@ class GrThreadSafeCache;
 
 struct GrTextureFreedMessage {
     GrTexture* fTexture;
-    uint32_t fOwningUniqueID;
+    GrDirectContext::DirectContextID fIntendedRecipient;
 };
 
 static inline bool SkShouldPostMessageToBus(
-        const GrTextureFreedMessage& msg, uint32_t msgBusUniqueID) {
-    // The inbox's ID is the unique ID of the owning GrContext.
-    return msgBusUniqueID == msg.fOwningUniqueID;
+        const GrTextureFreedMessage& msg, GrDirectContext::DirectContextID potentialRecipient) {
+    return potentialRecipient == msg.fIntendedRecipient;
 }
 
 /**
@@ -58,7 +58,9 @@ static inline bool SkShouldPostMessageToBus(
  */
 class GrResourceCache {
 public:
-    GrResourceCache(GrSingleOwner* owner, uint32_t contextUniqueID);
+    GrResourceCache(GrSingleOwner* owner,
+                    GrDirectContext::DirectContextID owningContextID,
+                    uint32_t familyID);
     ~GrResourceCache();
 
     // Default maximum number of bytes of gpu memory of budgeted resources in the cache.
@@ -152,16 +154,25 @@ public:
         keys. */
     void purgeAsNeeded();
 
-    /** Purges all resources that don't have external owners. */
-    void purgeAllUnlocked() { this->purgeUnlockedResources(false); }
-
     // Purge unlocked resources. If 'scratchResourcesOnly' is true the purgeable resources
     // containing persistent data are spared. If it is false then all purgeable resources will
     // be deleted.
-    void purgeUnlockedResources(bool scratchResourcesOnly);
+    void purgeUnlockedResources(bool scratchResourcesOnly=false) {
+        this->purgeUnlockedResources(/*purgeTime=*/nullptr, scratchResourcesOnly);
+    }
 
-    /** Purge all resources not used since the passed in time. */
-    void purgeResourcesNotUsedSince(GrStdSteadyClock::time_point);
+    // Purge unlocked resources not used since the passed point in time. If 'scratchResourcesOnly'
+    // is true the purgeable resources containing persistent data are spared. If it is false then
+    // all purgeable resources older than 'purgeTime' will be deleted.
+    void purgeResourcesNotUsedSince(GrStdSteadyClock::time_point purgeTime,
+                                    bool scratchResourcesOnly=false) {
+        this->purgeUnlockedResources(&purgeTime, scratchResourcesOnly);
+    }
+
+    /** If it's possible to purge enough resources to get the provided amount of budget
+        headroom, do so and return true. If it's not possible, do nothing and return false.
+     */
+    bool purgeToMakeHeadroom(size_t desiredHeadroomBytes);
 
     bool overBudget() const { return fBudgetedBytes > fMaxBytes; }
 
@@ -226,14 +237,13 @@ public:
     void dumpStatsKeyValuePairs(SkTArray<SkString>* keys, SkTArray<double>* value) const;
 #endif
 
-#endif
+#endif // GR_CACHE_STATS
 
-#ifdef SK_DEBUG
+#if GR_TEST_UTILS
     int countUniqueKeysWithTag(const char* tag) const;
-#endif
 
-    // This function is for unit testing and is only defined in test tools.
     void changeTimestamp(uint32_t newTimestamp);
+#endif
 
     // Enumerates all cached resources and dumps their details to traceMemoryDump.
     void dumpMemoryStatistics(SkTraceMemoryDump* traceMemoryDump) const;
@@ -265,6 +275,9 @@ private:
     bool wouldFit(size_t bytes) const { return fBudgetedBytes+bytes <= fMaxBytes; }
 
     uint32_t getNextTimestamp();
+
+    void purgeUnlockedResources(const GrStdSteadyClock::time_point* purgeTime,
+                                bool scratchResourcesOnly);
 
 #ifdef SK_DEBUG
     bool isInCache(const GrGpuResource* r) const;
@@ -321,8 +334,10 @@ private:
         return res->cacheAccess().accessCacheIndex();
     }
 
+    using TextureFreedMessageBus = SkMessageBus<GrTextureFreedMessage,
+                                                GrDirectContext::DirectContextID>;
+
     typedef SkMessageBus<GrUniqueKeyInvalidatedMessage, uint32_t>::Inbox InvalidUniqueKeyInbox;
-    typedef SkMessageBus<GrTextureFreedMessage, uint32_t>::Inbox FreedTextureInbox;
     typedef SkTDPQueue<GrGpuResource*, CompareTimestamp, AccessResourceIndex> PurgeableQueue;
     typedef SkTDArray<GrGpuResource*> ResourceArray;
 
@@ -362,9 +377,10 @@ private:
     int                                 fNumBudgetedResourcesFlushWillMakePurgeable = 0;
 
     InvalidUniqueKeyInbox               fInvalidUniqueKeyInbox;
-    FreedTextureInbox                   fFreedTextureInbox;
+    TextureFreedMessageBus::Inbox       fFreedTextureInbox;
     TexturesAwaitingUnref               fTexturesAwaitingUnref;
 
+    GrDirectContext::DirectContextID    fOwningContextID;
     uint32_t                            fContextUniqueID = SK_InvalidUniqueID;
     GrSingleOwner*                      fSingleOwner = nullptr;
 

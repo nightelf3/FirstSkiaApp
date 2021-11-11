@@ -169,6 +169,14 @@ void SkNWayCanvas::onClipRegion(const SkRegion& deviceRgn, SkClipOp op) {
     this->INHERITED::onClipRegion(deviceRgn, op);
 }
 
+void SkNWayCanvas::onResetClip() {
+    Iter iter(fList);
+    while (iter.next()) {
+        SkCanvasPriv::ResetClip(iter.get());
+    }
+    this->INHERITED::onResetClip();
+}
+
 void SkNWayCanvas::onDrawPaint(const SkPaint& paint) {
     Iter iter(fList);
     while (iter.next()) {
@@ -274,6 +282,13 @@ void SkNWayCanvas::onDrawAtlas2(const SkImage* image, const SkRSXform xform[], c
     Iter iter(fList);
     while (iter.next()) {
         iter->drawAtlas(image, xform, tex, colors, count, bmode, sampling, cull, paint);
+    }
+}
+
+void SkNWayCanvas::onDrawGlyphRunList(const SkGlyphRunList& list, const SkPaint &paint) {
+    Iter iter(fList);
+    while (iter.next()) {
+        iter->onDrawGlyphRunList(list, paint);
     }
 }
 

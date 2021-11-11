@@ -35,9 +35,18 @@ class VariableReference final : public Expression {
 public:
     using RefKind = VariableRefKind;
 
-    static constexpr Kind kExpressionKind = Kind::kVariableReference;
+    inline static constexpr Kind kExpressionKind = Kind::kVariableReference;
 
-    VariableReference(int offset, const Variable* variable, RefKind refKind = RefKind::kRead);
+    VariableReference(int line, const Variable* variable, RefKind refKind);
+
+    // Creates a VariableReference. There isn't much in the way of error-checking or optimization
+    // opportunities here.
+    static std::unique_ptr<Expression> Make(int line,
+                                            const Variable* variable,
+                                            RefKind refKind = RefKind::kRead) {
+        SkASSERT(variable);
+        return std::make_unique<VariableReference>(line, variable, refKind);
+    }
 
     VariableReference(const VariableReference&) = delete;
     VariableReference& operator=(const VariableReference&) = delete;
@@ -58,8 +67,7 @@ public:
     bool isConstantOrUniform() const override;
 
     std::unique_ptr<Expression> clone() const override {
-        return std::unique_ptr<Expression>(new VariableReference(fOffset, this->variable(),
-                                                                 this->refKind()));
+        return std::make_unique<VariableReference>(fLine, this->variable(), this->refKind());
     }
 
     String description() const override;

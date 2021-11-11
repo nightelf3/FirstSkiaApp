@@ -16,6 +16,7 @@
 
 class GrMtlBuffer;
 class GrMtlGpu;
+class GrMtlRenderCommandEncoder;
 
 class GrMtlPipelineStateDataManager : public GrUniformDataManager {
 public:
@@ -33,14 +34,8 @@ public:
     void setMatrix2f(UniformHandle, const float matrix[]) const override;
     void setMatrix2fv(UniformHandle, int arrayCount, const float matrices[]) const override;
 
-    // for nvpr only
-    void setPathFragmentInputTransform(VaryingHandle u, int components,
-                                       const SkMatrix& matrix) const override {
-        SK_ABORT("Only supported in NVPR, which is not in Metal");
-    }
-
     void uploadAndBindUniformBuffers(GrMtlGpu* gpu,
-                                     id<MTLRenderCommandEncoder> renderCmdEncoder) const;
+                                     GrMtlRenderCommandEncoder* renderCmdEncoder) const;
     void resetDirtyBits();
 
 private:

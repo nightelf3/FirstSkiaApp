@@ -10,36 +10,23 @@
 #include "src/gpu/d3d/GrD3DGpu.h"
 
 GrD3DDescriptorTableManager::GrD3DDescriptorTableManager(GrD3DGpu* gpu)
-    : fCBVSRVDescriptorPool(gpu, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+    : fShaderViewDescriptorPool(gpu, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
     , fSamplerDescriptorPool(gpu, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {}
 
 sk_sp<GrD3DDescriptorTable>
-        GrD3DDescriptorTableManager::createShaderOrConstantResourceTable(GrD3DGpu* gpu,
-                                                                         unsigned int size) {
-    sk_sp<GrD3DDescriptorTable> table = fCBVSRVDescriptorPool.allocateTable(gpu, size);
-    this->setHeaps(gpu);
+        GrD3DDescriptorTableManager::createShaderViewTable(GrD3DGpu* gpu, unsigned int size) {
+    sk_sp<GrD3DDescriptorTable> table = fShaderViewDescriptorPool.allocateTable(gpu, size);
     return table;
 }
 
 sk_sp<GrD3DDescriptorTable> GrD3DDescriptorTableManager::createSamplerTable(
         GrD3DGpu* gpu, unsigned int size) {
     sk_sp<GrD3DDescriptorTable> table = fSamplerDescriptorPool.allocateTable(gpu, size);
-    this->setHeaps(gpu);
     return table;
 }
 
-void GrD3DDescriptorTableManager::setHeaps(GrD3DGpu* gpu) {
-    sk_sp<Heap>& currentCBVSRVHeap = fCBVSRVDescriptorPool.currentDescriptorHeap();
-    sk_sp<Heap>& currentSamplerHeap = fSamplerDescriptorPool.currentDescriptorHeap();
-    GrD3DDirectCommandList* commandList = gpu->currentCommandList();
-    commandList->setDescriptorHeaps(currentCBVSRVHeap,
-                                    currentCBVSRVHeap->d3dDescriptorHeap(),
-                                    currentSamplerHeap,
-                                    currentSamplerHeap->d3dDescriptorHeap());
-}
-
 void GrD3DDescriptorTableManager::prepForSubmit(GrD3DGpu* gpu) {
-    fCBVSRVDescriptorPool.prepForSubmit(gpu);
+    fShaderViewDescriptorPool.prepForSubmit(gpu);
     fSamplerDescriptorPool.prepForSubmit(gpu);
 }
 
@@ -50,7 +37,7 @@ void GrD3DDescriptorTableManager::recycle(Heap* heap) {
     SkASSERT(heap);
     switch (heap->type()) {
         case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
-            fCBVSRVDescriptorPool.recycle(std::move(wrappedHeap));
+            fShaderViewDescriptorPool.recycle(std::move(wrappedHeap));
             break;
         case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
             fSamplerDescriptorPool.recycle(std::move(wrappedHeap));
@@ -81,7 +68,8 @@ sk_sp<GrD3DDescriptorTable> GrD3DDescriptorTableManager::Heap::allocateTable(
     fNextAvailable += count;
     return sk_sp<GrD3DDescriptorTable>(
             new GrD3DDescriptorTable(fHeap->getCPUHandle(startIndex).fHandle,
-                                     fHeap->getGPUHandle(startIndex).fHandle, fType));
+                                     fHeap->getGPUHandle(startIndex).fHandle,
+                                     fHeap->descriptorHeap(), fType));
 }
 
 void GrD3DDescriptorTableManager::Heap::onRecycle() const {
@@ -104,8 +92,12 @@ sk_sp<GrD3DDescriptorTable> GrD3DDescriptorTableManager::HeapPool::allocateTable
     // If it was already used, it will have been added to the commandlist,
     // and then later recycled back to us.
     while (fDescriptorHeaps.size() > 0) {
-        if (fDescriptorHeaps[fDescriptorHeaps.size() - 1]->canAllocate(count)) {
-            return fDescriptorHeaps[fDescriptorHeaps.size() - 1]->allocateTable(count);
+        auto& heap = fDescriptorHeaps[fDescriptorHeaps.size() - 1];
+        if (heap->canAllocate(count)) {
+            if (!heap->used()) {
+                gpu->currentCommandList()->addRecycledResource(heap);
+            }
+            return heap->allocateTable(count);
         }
         // No space in current heap, pop off list
         fDescriptorHeaps.pop_back();
@@ -115,6 +107,7 @@ sk_sp<GrD3DDescriptorTable> GrD3DDescriptorTableManager::HeapPool::allocateTable
     fCurrentHeapDescriptorCount = std::min(2*fCurrentHeapDescriptorCount, 2048u);
     sk_sp<GrD3DDescriptorTableManager::Heap> heap =
             GrD3DDescriptorTableManager::Heap::Make(gpu, fHeapType, fCurrentHeapDescriptorCount);
+    gpu->currentCommandList()->addRecycledResource(heap);
     fDescriptorHeaps.push_back(heap);
     return fDescriptorHeaps[fDescriptorHeaps.size() - 1]->allocateTable(count);
 }

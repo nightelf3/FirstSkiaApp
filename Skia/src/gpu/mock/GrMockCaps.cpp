@@ -7,14 +7,29 @@
 
 #include "src/gpu/mock/GrMockCaps.h"
 
+#include "src/core/SkMathPriv.h"
 #include "src/gpu/GrProgramDesc.h"
 
-GrProgramDesc GrMockCaps::makeDesc(GrRenderTarget* rt,
+int GrMockCaps::getRenderTargetSampleCount(int requestCount, GrColorType ct) const {
+    requestCount = std::max(requestCount, 1);
+
+    switch (fOptions.fConfigOptions[(int)ct].fRenderability) {
+        case GrMockOptions::ConfigOptions::Renderability::kNo:
+            return 0;
+        case GrMockOptions::ConfigOptions::Renderability::kNonMSAA:
+            return requestCount > 1 ? 0 : 1;
+        case GrMockOptions::ConfigOptions::Renderability::kMSAA:
+            return requestCount > kMaxSampleCnt ? 0 : GrNextPow2(requestCount);
+    }
+    return 0;
+}
+
+GrProgramDesc GrMockCaps::makeDesc(GrRenderTarget* /* rt */,
                                    const GrProgramInfo& programInfo,
                                    ProgramDescOverrideFlags overrideFlags) const {
     SkASSERT(overrideFlags == ProgramDescOverrideFlags::kNone);
     GrProgramDesc desc;
-    GrProgramDesc::Build(&desc, rt, programInfo, *this);
+    GrProgramDesc::Build(&desc, programInfo, *this);
     return desc;
 }
 

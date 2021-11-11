@@ -16,7 +16,8 @@
 
 namespace SkSL {
 
-class Statement;
+class Block;
+class SymbolTable;
 
 namespace dsl {
 
@@ -34,14 +35,26 @@ public:
         static_cast<void>(unused);
     }
 
-    DSLBlock(SkSL::StatementArray statements);
+    DSLBlock(DSLBlock&& other) = default;
+
+    DSLBlock(SkSL::StatementArray statements, std::shared_ptr<SymbolTable> symbols = nullptr);
+
+    DSLBlock(SkTArray<DSLStatement> statements, std::shared_ptr<SymbolTable> symbols = nullptr);
+
+    ~DSLBlock();
+
+    DSLBlock& operator=(DSLBlock&& other) {
+        fStatements = std::move(other.fStatements);
+        return *this;
+    }
 
     void append(DSLStatement stmt);
 
-private:
-    std::unique_ptr<SkSL::Statement> release();
+    std::unique_ptr<SkSL::Block> release();
 
+private:
     SkSL::StatementArray fStatements;
+    std::shared_ptr<SkSL::SymbolTable> fSymbols;
 
     friend class DSLStatement;
     friend class DSLFunction;

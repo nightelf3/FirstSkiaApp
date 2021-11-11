@@ -89,13 +89,6 @@ bool SkPaintToGrPaint(GrRecordingContext*,
                       const SkMatrixProvider& matrixProvider,
                       GrPaint* grPaint);
 
-/** Same as above but ignores the SkShader (if any) on skPaint. */
-bool SkPaintToGrPaintNoShader(GrRecordingContext*,
-                              const GrColorInfo& dstColorInfo,
-                              const SkPaint& skPaint,
-                              const SkMatrixProvider& matrixProvider,
-                              GrPaint* grPaint);
-
 /** Replaces the SkShader (if any) on skPaint with the passed in GrFragmentProcessor. The processor
     should expect an unpremul input color and produce a premultiplied output color. There is
     no primitive color. */
@@ -115,16 +108,6 @@ bool SkPaintToGrPaintWithBlend(GrRecordingContext*,
                                SkBlendMode primColorMode,
                                GrPaint* grPaint);
 
-/** Blends the passed-in shader with a per-primitive color which must be setup as a vertex attribute
-    using the specified SkBlendMode. */
-bool SkPaintToGrPaintWithBlendReplaceShader(GrRecordingContext* context,
-                                            const GrColorInfo& dstColorInfo,
-                                            const SkPaint& skPaint,
-                                            const SkMatrixProvider& matrixProvider,
-                                            std::unique_ptr<GrFragmentProcessor> shaderFP,
-                                            SkBlendMode primColorMode,
-                                            GrPaint* grPaint);
-
 /** This is used when there is a primitive color, but the shader should be ignored. Currently,
     the expectation is that the primitive color will be premultiplied, though it really should be
     unpremultiplied so that interpolation is done in unpremul space. The paint's alpha will be
@@ -138,35 +121,8 @@ inline bool SkPaintToGrPaintWithPrimitiveColor(GrRecordingContext* context,
                                      SkBlendMode::kDst, grPaint);
 }
 
-/** This is used when there may or may not be a shader, and the caller wants to plugin a texture
-    lookup.  If there is a shader, then its output will only be used if the texture is alpha8. */
-bool SkPaintToGrPaintWithTexture(GrRecordingContext*,
-                                 const GrColorInfo& dstColorInfo,
-                                 const SkPaint& skPaint,
-                                 const SkMatrixProvider& matrixProvider,
-                                 std::unique_ptr<GrFragmentProcessor> fp,
-                                 bool textureIsAlphaOnly,
-                                 GrPaint* grPaint);
-
 ////////////////////////////////////////////////////////////////////////////////
 // Misc Sk to Gr type conversions
-
-/**
- * Determines how to interpret SkFilterQuality given draw params and canvas state. If the returned
- * bool is true then bicubic filtering should be used (and the two other return values can be
- * ignored).
- */
-std::tuple<GrSamplerState::Filter,
-           GrSamplerState::MipmapMode,
-           SkCubicResampler>
-GrInterpretSamplingOptions(SkISize imageDims,
-                           const SkSamplingOptions&,
-                           const SkMatrix& viewM,
-                           const SkMatrix& localM,
-                           bool sharpenMipmappedTextures,
-                           bool allowFilterQualityReduction);
-
-//////////////////////////////////////////////////////////////////////////////
 
 static_assert((int)kZero_GrBlendCoeff == (int)SkBlendModeCoeff::kZero);
 static_assert((int)kOne_GrBlendCoeff == (int)SkBlendModeCoeff::kOne);
@@ -196,14 +152,6 @@ enum class GrImageTexGenPolicy : int {
 };
 
 /**
- * Returns a view that wraps a texture representing the bitmap. The texture is inserted into the
- * cache (unless the bitmap is marked volatile and can be retrieved again via this function.
- * A MIP mapped texture may be returned even when GrMipmapped is kNo. The function will succeed
- * with a non-MIP mapped texture if GrMipmapped is kYes but MIP mapping is not supported.
- */
-GrSurfaceProxyView GrRefCachedBitmapView(GrRecordingContext*, const SkBitmap&, GrMipmapped);
-
-/**
  * Creates a new texture with mipmap levels and copies the baseProxy into the base layer.
  */
 sk_sp<GrSurfaceProxy> GrCopyBaseMipMapToTextureProxy(GrRecordingContext*,
@@ -219,10 +167,28 @@ GrSurfaceProxyView GrCopyBaseMipMapToView(GrRecordingContext*,
                                           SkBudgeted = SkBudgeted::kYes);
 
 /*
- * Create a texture proxy from the provided bitmap and add it to the texture cache
- * using the key also extracted from 'bitmp'.
+ * Create a texture proxy from the provided bitmap and add it to the texture cache using the key
+ * also extracted from the bitmap. If GrMipmapped is kYes a non-mipmapped result may be returned
+ * if mipmapping isn't supported or for a 1x1 bitmap. If GrMipmapped is kNo it indicates mipmaps
+ * aren't required but a previously created mipmapped texture may still be returned. A color type is
+ * returned as color type conversion may be performed if there isn't a texture format equivalent of
+ * the bitmap's color type.
  */
-GrSurfaceProxyView GrMakeCachedBitmapProxyView(GrRecordingContext*, const SkBitmap& bitmap);
+std::tuple<GrSurfaceProxyView, GrColorType>
+GrMakeCachedBitmapProxyView(GrRecordingContext*,
+                            const SkBitmap&,
+                            GrMipmapped = GrMipmapped::kNo);
+
+/**
+ * Like above but always uploads the bitmap and never inserts into the cache. Unlike above, the
+ * texture may be approx or scratch and budgeted or not.
+ */
+std::tuple<GrSurfaceProxyView, GrColorType>
+GrMakeUncachedBitmapProxyView(GrRecordingContext*,
+                              const SkBitmap&,
+                              GrMipmapped = GrMipmapped::kNo,
+                              SkBackingFit = SkBackingFit::kExact,
+                              SkBudgeted = SkBudgeted::kYes);
 
 /**
  *  Our key includes the offset, width, and height so that bitmaps created by extractSubset()
@@ -242,8 +208,6 @@ void GrMakeKeyFromImageID(GrUniqueKey* key, uint32_t imageID, const SkIRect& ima
  * are purged before listeners trigger).
  */
 sk_sp<SkIDChangeListener> GrMakeUniqueKeyInvalidationListener(GrUniqueKey*, uint32_t contextID);
-
-constexpr SkCubicResampler kInvalidCubicResampler{-1.f, -1.f};
 
 static inline bool GrValidCubicResampler(SkCubicResampler cubic) {
     return cubic.B >= 0 && cubic.C >= 0;

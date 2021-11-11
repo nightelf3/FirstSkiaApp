@@ -19,6 +19,7 @@
 #include "src/gpu/d3d/GrD3DPipelineStateBuilder.h"
 #include "src/gpu/d3d/GrD3DRenderTarget.h"
 #include "src/gpu/d3d/GrD3DTexture.h"
+#include "src/gpu/effects/GrTextureEffect.h"
 
 #ifdef SK_DEBUG
 #include "include/gpu/GrDirectContext.h"
@@ -175,20 +176,15 @@ bool GrD3DOpsRenderPass::onBindPipeline(const GrProgramInfo& info, const SkRect&
         fCurrentPipelineBounds.setEmpty();
     }
 
+    GrD3DRenderTarget* d3dRT = static_cast<GrD3DRenderTarget*>(fRenderTarget);
     fCurrentPipelineState =
-            fGpu->resourceProvider().findOrCreateCompatiblePipelineState(fRenderTarget, info);
+            fGpu->resourceProvider().findOrCreateCompatiblePipelineState(d3dRT, info);
     if (!fCurrentPipelineState) {
         return false;
     }
 
     fGpu->currentCommandList()->setGraphicsRootSignature(fCurrentPipelineState->rootSignature());
-    fGpu->currentCommandList()->setPipelineState(fCurrentPipelineState);
-    if (info.pipeline().isHWAntialiasState()) {
-        fGpu->currentCommandList()->setDefaultSamplePositions();
-    } else {
-        fGpu->currentCommandList()->setCenteredSamplePositions(fRenderTarget->numSamples());
-    }
-
+    fGpu->currentCommandList()->setPipelineState(fCurrentPipelineState->pipeline());
     fCurrentPipelineState->setAndBindConstants(fGpu, fRenderTarget, info);
 
     set_stencil_ref(fGpu, info);
@@ -219,14 +215,14 @@ void update_resource_state(GrTexture* tex, GrRenderTarget* rt, GrD3DGpu* gpu) {
     d3dTex->setResourceState(gpu, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-bool GrD3DOpsRenderPass::onBindTextures(const GrPrimitiveProcessor& primProc,
-                                        const GrSurfaceProxy* const primProcTextures[],
+bool GrD3DOpsRenderPass::onBindTextures(const GrGeometryProcessor& geomProc,
+                                        const GrSurfaceProxy* const geomProcTextures[],
                                         const GrPipeline& pipeline) {
     SkASSERT(fCurrentPipelineState);
 
     // update textures to sampled resource state
-    for (int i = 0; i < primProc.numTextureSamplers(); ++i) {
-        update_resource_state(primProcTextures[i]->peekTexture(), fRenderTarget, fGpu);
+    for (int i = 0; i < geomProc.numTextureSamplers(); ++i) {
+        update_resource_state(geomProcTextures[i]->peekTexture(), fRenderTarget, fGpu);
     }
 
     pipeline.visitTextureEffects([&](const GrTextureEffect& te) {
@@ -238,7 +234,7 @@ bool GrD3DOpsRenderPass::onBindTextures(const GrPrimitiveProcessor& primProc,
     }
 
     // TODO: possibly check for success once we start binding properly
-    fCurrentPipelineState->setAndBindTextures(fGpu, primProc, primProcTextures, pipeline);
+    fCurrentPipelineState->setAndBindTextures(fGpu, geomProc, geomProcTextures, pipeline);
 
     return true;
 }
@@ -346,5 +342,22 @@ void GrD3DOpsRenderPass::inlineUpload(GrOpFlushState* state, GrDeferredTextureUp
     // If we ever start using copy command lists for doing uploads, then we'll need to make sure
     // we submit our main command list before doing the copy here and then start a new main command
     // list.
-    state->doUpload(upload);
+
+    fGpu->endRenderPass(fRenderTarget, fOrigin, fBounds);
+
+    // We pass in true here to signal that after the upload we need to set the upload texture's
+    // resource state back to D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE.
+    state->doUpload(upload, true);
+}
+
+void GrD3DOpsRenderPass::submit() {
+    if (!fRenderTarget) {
+        return;
+    }
+
+    // We don't use render passes in d3d, so there is nothing to submit here as all commands have
+    // already been recorded on the main command list. If in the future we start to use render
+    // passes on d3d12 devices that support them (most likely ARM devices), then we
+    // will submit them here.
+    fGpu->endRenderPass(fRenderTarget, fOrigin, fBounds);
 }

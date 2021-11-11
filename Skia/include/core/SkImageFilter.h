@@ -8,7 +8,6 @@
 #ifndef SkImageFilter_DEFINED
 #define SkImageFilter_DEFINED
 
-#include "include/core/SkFilterQuality.h"
 #include "include/core/SkFlattenable.h"
 #include "include/core/SkMatrix.h"
 #include "include/core/SkRect.h"
@@ -93,14 +92,6 @@ public:
      *  else return null.
      */
     sk_sp<SkImageFilter> makeWithLocalMatrix(const SkMatrix& matrix) const;
-
-    static SkFlattenable::Type GetFlattenableType() {
-        return kSkImageFilter_Type;
-    }
-
-    SkFlattenable::Type getFlattenableType() const override {
-        return kSkImageFilter_Type;
-    }
 
     static sk_sp<SkImageFilter> Deserialize(const void* data, size_t size,
                                           const SkDeserialProcs* procs = nullptr) {

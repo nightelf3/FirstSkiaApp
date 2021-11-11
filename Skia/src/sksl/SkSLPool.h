@@ -47,9 +47,9 @@ public:
     // the pool can be destroyed.
     static void FreeMemory(void* ptr);
 
-private:
-    void checkForLeaks();
+    static bool IsAttached();
 
+private:
     Pool() = default;  // use Create to make a pool
     std::unique_ptr<SkSL::MemoryPool> fMemPool;
 };
@@ -68,6 +68,27 @@ public:
         Pool::FreeMemory(ptr);
     }
 };
+
+/**
+ * Temporarily attaches a pool to the current thread within a scope.
+ */
+class AutoAttachPoolToThread {
+public:
+    AutoAttachPoolToThread(Pool* p) : fPool(p) {
+        if (fPool) {
+            fPool->attachToThread();
+        }
+    }
+    ~AutoAttachPoolToThread() {
+        if (fPool) {
+            fPool->detachFromThread();
+        }
+    }
+
+private:
+    Pool* fPool = nullptr;
+};
+
 
 }  // namespace SkSL
 

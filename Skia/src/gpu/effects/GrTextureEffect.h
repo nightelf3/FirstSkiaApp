@@ -11,12 +11,12 @@
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMatrix.h"
 #include "src/gpu/GrFragmentProcessor.h"
-#include "src/gpu/glsl/GrGLSLFragmentProcessor.h"
+#include "src/gpu/GrSurfaceProxyView.h"
 #include "src/gpu/glsl/GrGLSLFragmentShaderBuilder.h"
 
 class GrTextureEffect : public GrFragmentProcessor {
 public:
-    static constexpr float kDefaultBorder[4] = {0};
+    inline static constexpr float kDefaultBorder[4] = {0};
 
     /** Make from a filter. The sampler will be configured with clamp mode. */
     static std::unique_ptr<GrFragmentProcessor> Make(
@@ -43,7 +43,9 @@ public:
      * filtering is used and a shader invocation reads from a level other than the base
      * then it may read texel values that were computed from in part from base level texels
      * outside the window. More specifically, we treat the MIP map case exactly like the
-     * linear case in terms of how the final texture coords are computed.
+     * linear case in terms of how the final texture coords are computed. If
+     * alwaysUseShaderTileMode is true then MakeSubset won't attempt to use HW wrap modes if the
+     * subset contains the entire texture.
      */
     static std::unique_ptr<GrFragmentProcessor> MakeSubset(GrSurfaceProxyView,
                                                            SkAlphaType,
@@ -51,7 +53,8 @@ public:
                                                            GrSamplerState,
                                                            const SkRect& subset,
                                                            const GrCaps& caps,
-                                                           const float border[4] = kDefaultBorder);
+                                                           const float border[4] = kDefaultBorder,
+                                                           bool alwaysUseShaderTileMode = false);
 
     /**
      * The same as above but also takes a 'domain' that specifies any known limit on the post-
@@ -100,19 +103,26 @@ public:
 
     const GrSurfaceProxyView& view() const { return fView; }
 
-    class Impl : public GrGLSLFragmentProcessor {
+    // Gets a matrix that is concat'ed by wrapping GrMatrixEffect that handles y-flip and coord
+    // normalization if required. This matrix is not always known when we make the GrTextureEffect
+    // because of fully-lazy proxies. Hence, this method  exists to allow this concat to happen
+    // after proxy instantiation with coordination from GrMatrixEffect.
+    SkMatrix coordAdjustmentMatrix() const;
+
+    class Impl : public ProgramImpl {
     public:
         void emitCode(EmitArgs&) override;
-        void onSetData(const GrGLSLProgramDataManager&, const GrFragmentProcessor&) override;
 
         void setSamplerHandle(GrGLSLShaderBuilder::SamplerHandle handle) {
             fSamplerHandle = handle;
         }
 
     private:
+        void onSetData(const GrGLSLProgramDataManager&, const GrFragmentProcessor&) override;
+
         UniformHandle fSubsetUni;
         UniformHandle fClampUni;
-        UniformHandle fNormUni;
+        UniformHandle fIDimsUni;
         UniformHandle fBorderUni;
         GrGLSLShaderBuilder::SamplerHandle fSamplerHandle;
     };
@@ -139,6 +149,11 @@ private:
                                     GrSamplerState::Filter,
                                     GrSamplerState::MipmapMode);
     static bool ShaderModeIsClampToBorder(ShaderMode);
+    // To keep things a little simpler, when we have filtering logic in the shader we
+    // operate on unnormalized texture coordinates. We will add a uniform that stores
+    // {1/w, 1/h} in a float2 and normalizes after the mode is handled if the texture
+    // is not rectangle.
+    static bool ShaderModeRequiresUnormCoord(ShaderMode);
 
     GrSurfaceProxyView fView;
     GrSamplerState fSamplerState;
@@ -146,18 +161,18 @@ private:
     SkRect fSubset;
     SkRect fClamp;
     ShaderMode fShaderModes[2];
-    // true if we are dealing with a fully lazy proxy which can't be normalized until runtime
-    bool fLazyProxyNormalization;
 
-    inline GrTextureEffect(GrSurfaceProxyView, SkAlphaType, const Sampling&, bool);
+    inline GrTextureEffect(GrSurfaceProxyView, SkAlphaType, const Sampling&);
 
     explicit GrTextureEffect(const GrTextureEffect& src);
 
-    std::unique_ptr<GrGLSLFragmentProcessor> onMakeProgramImpl() const override;
+    std::unique_ptr<ProgramImpl> onMakeProgramImpl() const override;
 
-    void onGetGLSLProcessorKey(const GrShaderCaps&, GrProcessorKeyBuilder*) const override;
+    void onAddToKey(const GrShaderCaps&, GrProcessorKeyBuilder*) const override;
 
     bool onIsEqual(const GrFragmentProcessor&) const override;
+
+    bool matrixEffectShouldNormalize() const;
 
     bool hasClampToBorderShaderMode() const {
         return ShaderModeIsClampToBorder(fShaderModes[0]) ||

@@ -24,8 +24,9 @@ public:
     static const int kPathRefGenIDBitCnt = 32;
 #endif
 
-    // skbug.com/9906: Not a perfect solution for W plane clipping, but 1/1024 is a reasonable limit
-    static constexpr SkScalar kW0PlaneDistance = 1.f / 1024.f;
+    // skbug.com/9906: Not a perfect solution for W plane clipping, but 1/16384 is a
+    // reasonable limit (roughly 5e-5)
+    inline static constexpr SkScalar kW0PlaneDistance = 1.f / (1 << 14);
 
     static SkPathFirstDirection AsFirstDirection(SkPathDirection dir) {
         // since we agree numerically for the values in Direction, we can just cast.
@@ -74,6 +75,20 @@ public:
             }
         }
         return false;
+    }
+
+    // In some scenarios (e.g. fill or convexity checking all but the last leading move to are
+    // irrelevant to behavior). SkPath::injectMoveToIfNeeded should ensure that this is always at
+    // least 1.
+    static int LeadingMoveToCount(const SkPath& path) {
+        int verbCount = path.countVerbs();
+        auto verbs = path.fPathRef->verbsBegin();
+        for (int i = 0; i < verbCount; i++) {
+            if (verbs[i] != SkPath::Verb::kMove_Verb) {
+                return i;
+            }
+        }
+        return verbCount; // path is all move verbs
     }
 
     static void AddGenIDChangeListener(const SkPath& path, sk_sp<SkIDChangeListener> listener) {
@@ -187,15 +202,6 @@ public:
     static const SkScalar* ConicWeightData(const SkPath& path) {
         return path.fPathRef->conicWeights();
     }
-
-    /** Returns true if path formed by pts is convex.
-
-        @param pts    SkPoint array of path
-        @param count  number of entries in array
-
-        @return       true if pts represent a convex geometry
-    */
-    static bool IsConvex(const SkPoint pts[], int count);
 
     /** Returns true if the underlying SkPathRef has one single owner. */
     static bool TestingOnly_unique(const SkPath& path) {
@@ -327,6 +333,8 @@ public:
         }
         return true;
     }
+
+    static int LastMoveToIndex(const SkPath& path) { return path.fLastMoveToIndex; }
 
     static bool IsRectContour(const SkPath&, bool allowPartial, int* currVerb,
                               const SkPoint** ptsPtr, bool* isClosed, SkPathDirection* direction,
@@ -483,6 +491,7 @@ public:
                         return res;
                     }
                     fMoveToPtr = fPts++;
+                    fNextIsNewContour = true;
                 } break;
                 case SkPath::kClose_Verb:
                     if (fNeedsCloseLine) return closeline();

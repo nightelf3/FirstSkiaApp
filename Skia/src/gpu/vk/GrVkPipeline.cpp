@@ -7,6 +7,7 @@
 
 #include "src/gpu/vk/GrVkPipeline.h"
 
+#include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrGeometryProcessor.h"
 #include "src/gpu/GrPipeline.h"
 #include "src/gpu/GrStencilSettings.h"
@@ -67,7 +68,7 @@ static inline VkFormat attrib_type_to_vkformat(GrVertexAttribType type) {
             return VK_FORMAT_R16G16_UNORM;
         case kInt_GrVertexAttribType:
             return VK_FORMAT_R32_SINT;
-        case kUint_GrVertexAttribType:
+        case kUInt_GrVertexAttribType:
             return VK_FORMAT_R32_UINT;
         case kUShort_norm_GrVertexAttribType:
             return VK_FORMAT_R16_UNORM;
@@ -78,8 +79,8 @@ static inline VkFormat attrib_type_to_vkformat(GrVertexAttribType type) {
 }
 
 static void setup_vertex_input_state(
-        const GrPrimitiveProcessor::AttributeSet& vertexAttribs,
-        const GrPrimitiveProcessor::AttributeSet& instanceAttribs,
+        const GrGeometryProcessor::AttributeSet& vertexAttribs,
+        const GrGeometryProcessor::AttributeSet& instanceAttribs,
         VkPipelineVertexInputStateCreateInfo* vertexInputInfo,
         SkSTArray<2, VkVertexInputBindingDescription, true>* bindingDescs,
         VkVertexInputAttributeDescription* attributeDesc) {
@@ -278,56 +279,20 @@ static void setup_viewport_scissor_state(VkPipelineViewportStateCreateInfo* view
     SkASSERT(viewportInfo->viewportCount == viewportInfo->scissorCount);
 }
 
-static void setup_multisample_state(int numRasterSamples,
+static void setup_multisample_state(int numSamples,
                                     const GrCaps* caps,
                                     VkPipelineMultisampleStateCreateInfo* multisampleInfo) {
     memset(multisampleInfo, 0, sizeof(VkPipelineMultisampleStateCreateInfo));
     multisampleInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleInfo->pNext = nullptr;
     multisampleInfo->flags = 0;
-    SkAssertResult(GrSampleCountToVkSampleCount(numRasterSamples,
+    SkAssertResult(GrSampleCountToVkSampleCount(numSamples,
                                                 &multisampleInfo->rasterizationSamples));
     multisampleInfo->sampleShadingEnable = VK_FALSE;
     multisampleInfo->minSampleShading = 0.0f;
     multisampleInfo->pSampleMask = nullptr;
     multisampleInfo->alphaToCoverageEnable = VK_FALSE;
     multisampleInfo->alphaToOneEnable = VK_FALSE;
-}
-
-static void setup_all_sample_locations_at_pixel_center(
-        int numRasterSamples,
-        VkPipelineSampleLocationsStateCreateInfoEXT* sampleLocations) {
-    constexpr static VkSampleLocationEXT kCenteredSampleLocations[16] = {
-            {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f},
-            {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}, {.5f,.5f}};
-    memset(sampleLocations, 0, sizeof(VkPipelineSampleLocationsStateCreateInfoEXT));
-    sampleLocations->sType = VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT;
-    sampleLocations->pNext = nullptr;
-    sampleLocations->sampleLocationsEnable = VK_TRUE;
-    sampleLocations->sampleLocationsInfo.sType = VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT;
-    sampleLocations->sampleLocationsInfo.pNext = nullptr;
-    SkAssertResult(GrSampleCountToVkSampleCount(
-            numRasterSamples,
-            &sampleLocations->sampleLocationsInfo.sampleLocationsPerPixel));
-    sampleLocations->sampleLocationsInfo.sampleLocationGridSize.width = 1;
-    sampleLocations->sampleLocationsInfo.sampleLocationGridSize.height = 1;
-    SkASSERT(numRasterSamples < (int)SK_ARRAY_COUNT(kCenteredSampleLocations));
-    sampleLocations->sampleLocationsInfo.sampleLocationsCount = std::min(
-            numRasterSamples, (int)SK_ARRAY_COUNT(kCenteredSampleLocations));
-    sampleLocations->sampleLocationsInfo.pSampleLocations = kCenteredSampleLocations;
-}
-
-static void setup_coverage_modulation_state(
-        VkPipelineCoverageModulationStateCreateInfoNV* coverageModulationInfo) {
-    memset(coverageModulationInfo, 0, sizeof(VkPipelineCoverageModulationStateCreateInfoNV));
-    coverageModulationInfo->sType =
-            VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV;
-    coverageModulationInfo->pNext = nullptr;
-    coverageModulationInfo->flags = 0;
-    coverageModulationInfo->coverageModulationMode = VK_COVERAGE_MODULATION_MODE_RGBA_NV;
-    coverageModulationInfo->coverageModulationTableEnable = false;
-    coverageModulationInfo->coverageModulationTableCount = 0;
-    coverageModulationInfo->pCoverageModulationTable = nullptr;
 }
 
 static VkBlendFactor blend_coeff_to_vk_blend(GrBlendCoeff coeff) {
@@ -504,14 +469,13 @@ static void setup_dynamic_state(VkPipelineDynamicStateCreateInfo* dynamicInfo,
 }
 
 sk_sp<GrVkPipeline> GrVkPipeline::Make(GrVkGpu* gpu,
-                                   const GrPrimitiveProcessor::AttributeSet& vertexAttribs,
-                                   const GrPrimitiveProcessor::AttributeSet& instanceAttribs,
+                                   const GrGeometryProcessor::AttributeSet& vertexAttribs,
+                                   const GrGeometryProcessor::AttributeSet& instanceAttribs,
                                    GrPrimitiveType primitiveType,
                                    GrSurfaceOrigin origin,
                                    const GrStencilSettings& stencilSettings,
-                                   int numRasterSamples,
+                                   int numSamples,
                                    bool isHWAntialiasState,
-                                   bool isMixedSampled,
                                    const GrXferProcessor::BlendInfo& blendInfo,
                                    bool isWireframe,
                                    bool useConservativeRaster,
@@ -541,26 +505,7 @@ sk_sp<GrVkPipeline> GrVkPipeline::Make(GrVkGpu* gpu,
     setup_viewport_scissor_state(&viewportInfo);
 
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    setup_multisample_state(numRasterSamples, gpu->caps(), &multisampleInfo);
-
-    VkPipelineSampleLocationsStateCreateInfoEXT sampleLocations;
-    if (gpu->caps()->multisampleDisableSupport()) {
-        if (numRasterSamples > 1 && !isHWAntialiasState) {
-            setup_all_sample_locations_at_pixel_center(numRasterSamples, &sampleLocations);
-            sampleLocations.pNext = multisampleInfo.pNext;
-            multisampleInfo.pNext = &sampleLocations;
-        }
-    }
-
-    VkPipelineCoverageModulationStateCreateInfoNV coverageModulationInfo;
-    if (gpu->caps()->mixedSamplesSupport()) {
-        if (isMixedSampled) {
-            SkASSERT(gpu->caps()->mixedSamplesSupport());
-            setup_coverage_modulation_state(&coverageModulationInfo);
-            coverageModulationInfo.pNext = multisampleInfo.pNext;
-            multisampleInfo.pNext = &coverageModulationInfo;
-        }
-    }
+    setup_multisample_state(numSamples, gpu->caps(), &multisampleInfo);
 
     // We will only have one color attachment per pipeline.
     VkPipelineColorBlendAttachmentState attachmentStates[1];
@@ -607,6 +552,7 @@ sk_sp<GrVkPipeline> GrVkPipeline::Make(GrVkGpu* gpu,
     VkPipeline vkPipeline;
     VkResult err;
     {
+        TRACE_EVENT0("skia.shaders", "CreateGraphicsPipeline");
 #if defined(SK_ENABLE_SCOPED_LSAN_SUPPRESSIONS)
         // skia:8712
         __lsan::ScopedDisabler lsanDisabler;
@@ -634,18 +580,17 @@ sk_sp<GrVkPipeline> GrVkPipeline::Make(GrVkGpu* gpu,
                                        VkPipelineLayout layout,
                                        VkPipelineCache cache,
                                        uint32_t subpass) {
-    const GrPrimitiveProcessor& primProc = programInfo.primProc();
+    const GrGeometryProcessor& geomProc = programInfo.geomProc();
     const GrPipeline& pipeline = programInfo.pipeline();
 
     return Make(gpu,
-                primProc.vertexAttributes(),
-                primProc.instanceAttributes(),
+                geomProc.vertexAttributes(),
+                geomProc.instanceAttributes(),
                 programInfo.primitiveType(),
                 programInfo.origin(),
                 programInfo.nonGLStencilSettings(),
-                programInfo.numRasterSamples(),
-                pipeline.isHWAntialiasState(),
-                programInfo.isMixedSampled(),
+                programInfo.numSamples(),
+                programInfo.numSamples() > 1,
                 pipeline.getXferProcessor().getBlendInfo(),
                 pipeline.isWireframe(),
                 pipeline.usesConservativeRaster(),
@@ -668,11 +613,11 @@ void GrVkPipeline::freeGPUData() const {
 
 void GrVkPipeline::SetDynamicScissorRectState(GrVkGpu* gpu,
                                               GrVkCommandBuffer* cmdBuffer,
-                                              const GrRenderTarget* renderTarget,
+                                              SkISize colorAttachmentDimensions,
                                               GrSurfaceOrigin rtOrigin,
                                               const SkIRect& scissorRect) {
     SkASSERT(scissorRect.isEmpty() ||
-             SkIRect::MakeWH(renderTarget->width(), renderTarget->height()).contains(scissorRect));
+             SkIRect::MakeSize(colorAttachmentDimensions).contains(scissorRect));
 
     VkRect2D scissor;
     scissor.offset.x = scissorRect.fLeft;
@@ -681,7 +626,7 @@ void GrVkPipeline::SetDynamicScissorRectState(GrVkGpu* gpu,
         scissor.offset.y = scissorRect.fTop;
     } else {
         SkASSERT(kBottomLeft_GrSurfaceOrigin == rtOrigin);
-        scissor.offset.y = renderTarget->height() - scissorRect.fBottom;
+        scissor.offset.y = colorAttachmentDimensions.height() - scissorRect.fBottom;
     }
     scissor.extent.height = scissorRect.height();
 
@@ -692,13 +637,13 @@ void GrVkPipeline::SetDynamicScissorRectState(GrVkGpu* gpu,
 
 void GrVkPipeline::SetDynamicViewportState(GrVkGpu* gpu,
                                            GrVkCommandBuffer* cmdBuffer,
-                                           const GrRenderTarget* renderTarget) {
+                                           SkISize colorAttachmentDimensions) {
     // We always use one viewport the size of the RT
     VkViewport viewport;
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = SkIntToScalar(renderTarget->width());
-    viewport.height = SkIntToScalar(renderTarget->height());
+    viewport.width = SkIntToScalar(colorAttachmentDimensions.width());
+    viewport.height = SkIntToScalar(colorAttachmentDimensions.height());
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     cmdBuffer->setViewport(gpu, 0, 1, &viewport);

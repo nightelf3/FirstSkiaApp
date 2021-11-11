@@ -26,146 +26,215 @@
 #error This file must be compiled with Arc. Use -fobjc-arc flag
 #endif
 
-GrMtlCaps::GrMtlCaps(const GrContextOptions& contextOptions, const id<MTLDevice> device,
-                     MTLFeatureSet featureSet)
-        : INHERITED(contextOptions) {
-    fShaderCaps.reset(new GrShaderCaps(contextOptions));
+GR_NORETAIN_BEGIN
 
-    this->initFeatureSet(featureSet);
+GrMtlCaps::GrMtlCaps(const GrContextOptions& contextOptions, const id<MTLDevice> device)
+        : INHERITED(contextOptions) {
+    fShaderCaps = std::make_unique<GrShaderCaps>();
+
+    this->initGPUFamily(device);
     this->initGrCaps(device);
     this->initShaderCaps();
+    if (!contextOptions.fDisableDriverCorrectnessWorkarounds) {
+        this->applyDriverCorrectnessWorkarounds(contextOptions, device);
+    }
+
     this->initFormatTable();
     this->initStencilFormat(device);
+
+    // TODO: appears to be slow with Mac msaa8, disabled for now
+    fStoreAndMultisampleResolveSupport = (fGPUFamily == GPUFamily::kApple &&
+                                          fFamilyGroup >= 3);
+    // Also slow with non-Apple silicon
+    fPreferDiscardableMSAAAttachment = (fGPUFamily == GPUFamily::kApple);
 
     this->finishInitialization(contextOptions);
 }
 
-void GrMtlCaps::initFeatureSet(MTLFeatureSet featureSet) {
-    // Mac OSX
-#ifdef SK_BUILD_FOR_MAC
+// translates from older MTLFeatureSet interface to MTLGPUFamily interface
+bool GrMtlCaps::getGPUFamilyFromFeatureSet(id<MTLDevice> device,
+                                           GPUFamily* gpuFamily,
+                                           int* group) {
+#if defined(SK_BUILD_FOR_MAC)
+    // Apple Silicon is only available in later OSes
+    *gpuFamily = GPUFamily::kMac;
+    // Mac OSX 14
+    if (@available(macOS 10.14, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily2_v1]) {
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v4]) {
+            *group = 1;
+            return true;
+        }
+    }
+    // Mac OSX 13
+    if (@available(macOS 10.13, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v3]) {
+            *group = 1;
+            return true;
+        }
+    }
+    // Mac OSX 12
     if (@available(macOS 10.12, *)) {
-        if (MTLFeatureSet_OSX_GPUFamily1_v2 == featureSet) {
-            fPlatform = Platform::kMac;
-            fFamilyGroup = 1;
-            fVersion = 2;
-            return;
+        if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v2]) {
+            *group = 1;
+            return true;
         }
     }
-    if (MTLFeatureSet_OSX_GPUFamily1_v1 == featureSet) {
-        fPlatform = Platform::kMac;
-        fFamilyGroup = 1;
-        fVersion = 1;
-        return;
+    // Mac OSX 11
+    if (@available(macOS 10.11, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v1]) {
+            *group = 1;
+            return true;
+        }
     }
+#elif defined(SK_BUILD_FOR_IOS)
+    // TODO: support tvOS
+   *gpuFamily = GPUFamily::kApple;
+    // iOS 12
+    if (@available(iOS 12.0, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily5_v1]) {
+            *group = 5;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily4_v2]) {
+            *group = 4;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v4]) {
+            *group = 3;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily2_v5]) {
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily1_v5]) {
+            *group = 1;
+            return true;
+        }
+    }
+    // iOS 11
+    if (@available(iOS 11.0, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily4_v1]) {
+            *group = 4;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v3]) {
+            *group = 3;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily2_v4]) {
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily1_v4]) {
+            *group = 1;
+            return true;
+        }
+    }
+    // iOS 10
+    if (@available(iOS 10.0, *)) {
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v2]) {
+            *group = 3;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily2_v3]) {
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily1_v3]) {
+            *group = 1;
+            return true;
+        }
+    }
+    // We don't support earlier OSes
 #endif
 
-    // iOS Family group 3
-#ifdef SK_BUILD_FOR_IOS
-    if (@available(iOS 10.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily3_v2 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 3;
-            fVersion = 2;
-            return;
-        }
-    }
-    if (@available(iOS 9.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily3_v1 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 3;
-            fVersion = 1;
-            return;
-        }
-    }
-
-    // iOS Family group 2
-    if (@available(iOS 10.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily2_v3 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 2;
-            fVersion = 3;
-            return;
-        }
-    }
-    if (@available(iOS 9.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily2_v2 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 2;
-            fVersion = 2;
-            return;
-        }
-    }
-    if (MTLFeatureSet_iOS_GPUFamily2_v1 == featureSet) {
-        fPlatform = Platform::kIOS;
-        fFamilyGroup = 2;
-        fVersion = 1;
-        return;
-    }
-
-    // iOS Family group 1
-    if (@available(iOS 10.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily1_v3 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 1;
-            fVersion = 3;
-            return;
-        }
-    }
-    if (@available(iOS 9.0, *)) {
-        if (MTLFeatureSet_iOS_GPUFamily1_v2 == featureSet) {
-            fPlatform = Platform::kIOS;
-            fFamilyGroup = 1;
-            fVersion = 2;
-            return;
-        }
-    }
-    if (MTLFeatureSet_iOS_GPUFamily1_v1 == featureSet) {
-        fPlatform = Platform::kIOS;
-        fFamilyGroup = 1;
-        fVersion = 1;
-        return;
-    }
-#endif
-    // No supported feature sets were found
-    SK_ABORT("Requested an unsupported feature set");
-}
-
-static int get_surface_sample_cnt(GrSurface* surf) {
-    if (const GrRenderTarget* rt = surf->asRenderTarget()) {
-        return rt->numSamples();
-    }
-    return 1;
-}
-
-static bool is_resolving_msaa(GrSurface* surf) {
-    auto rt = static_cast<GrMtlRenderTarget*>(surf->asRenderTarget());
-    if (rt && rt->mtlResolveTexture()) {
-        SkASSERT(rt->numSamples() > 1);
-        return true;
-    }
+    // No supported GPU families were found
     return false;
 }
 
-bool GrMtlCaps::canCopyAsBlit(GrSurface* dst,
-                              GrSurface* src,
-                              const SkIRect& srcRect,
-                              const SkIPoint& dstPoint) const {
-    if (is_resolving_msaa(src) || is_resolving_msaa(dst)) {
-        return false;
-    }
-    id<MTLTexture> dstTex = GrGetMTLTextureFromSurface(dst);
-    id<MTLTexture> srcTex = GrGetMTLTextureFromSurface(src);
-    if (srcTex.framebufferOnly || dstTex.framebufferOnly) {
-        return false;
-    }
+bool GrMtlCaps::getGPUFamily(id<MTLDevice> device, GPUFamily* gpuFamily, int* group) {
+#if GR_METAL_SDK_VERSION >= 220
+    if (@available(macOS 10.15, iOS 13.0, tvOS 13.0, *)) {
+        // Apple Silicon
+#if GR_METAL_SDK_VERSION >= 230
+        if ([device supportsFamily:MTLGPUFamilyApple7]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 7;
+            return true;
+        }
+#endif
+#ifdef SK_BUILD_FOR_IOS
+        if ([device supportsFamily:MTLGPUFamilyApple6]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 6;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple5]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 5;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple4]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 4;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple3]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 3;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple2]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            *gpuFamily = GPUFamily::kApple;
+            *group = 1;
+            return true;
+        }
+#endif
 
-    MTLPixelFormat dstFormat = dstTex.pixelFormat;
-    MTLPixelFormat srcFormat = srcTex.pixelFormat;
-    int srcSampleCount = get_surface_sample_cnt(src);
-    int dstSampleCount = get_surface_sample_cnt(dst);
+        // Older Macs
+        // At the moment MacCatalyst families have the same features as Mac,
+        // so we treat them the same
+        if ([device supportsFamily:MTLGPUFamilyMac2] ||
+            [device supportsFamily:MTLGPUFamilyMacCatalyst2]) {
+            *gpuFamily = GPUFamily::kMac;
+            *group = 2;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyMac1] ||
+            [device supportsFamily:MTLGPUFamilyMacCatalyst1]) {
+            *gpuFamily = GPUFamily::kMac;
+            *group = 1;
+            return true;
+        }
+    }
+#endif
 
-    return this->canCopyAsBlit(dstFormat, dstSampleCount, srcFormat, srcSampleCount, srcRect,
-                               dstPoint, src == dst);
+    // No supported GPU families were found
+    return false;
+}
+
+void GrMtlCaps::initGPUFamily(id<MTLDevice> device) {
+    if (!this->getGPUFamily(device, &fGPUFamily, &fFamilyGroup) &&
+        !this->getGPUFamilyFromFeatureSet(device, &fGPUFamily, &fFamilyGroup)) {
+        // We don't know what this is, fall back to minimum defaults
+#ifdef SK_BUILD_FOR_MAC
+        fGPUFamily = GPUFamily::kMac;
+        fFamilyGroup = 1;
+#else
+        fGPUFamily = GPUFamily::kApple;
+        fFamilyGroup = 1;
+#endif
+    }
 }
 
 bool GrMtlCaps::canCopyAsBlit(MTLPixelFormat dstFormat, int dstSampleCount,
@@ -186,22 +255,6 @@ bool GrMtlCaps::canCopyAsBlit(MTLPixelFormat dstFormat, int dstSampleCount,
         }
     }
     return true;
-}
-
-bool GrMtlCaps::canCopyAsResolve(GrSurface* dst,
-                                 GrSurface* src,
-                                 const SkIRect& srcRect,
-                                 const SkIPoint& dstPoint) const {
-    MTLPixelFormat dstFormat = GrBackendFormatAsMTLPixelFormat(dst->backendFormat());
-    MTLPixelFormat srcFormat = GrBackendFormatAsMTLPixelFormat(src->backendFormat());
-
-    int srcSampleCount = get_surface_sample_cnt(src);
-    int dstSampleCount = get_surface_sample_cnt(dst);
-
-    bool srcIsRenderTarget = src->asRenderTarget();
-    SkISize srcSize = src->dimensions();
-    return this->canCopyAsResolve(dstFormat, dstSampleCount, srcFormat, srcSampleCount,
-                                  srcIsRenderTarget, srcSize, srcRect, dstPoint, src == dst);
 }
 
 bool GrMtlCaps::canCopyAsResolve(MTLPixelFormat dstFormat, int dstSampleCount,
@@ -259,7 +312,7 @@ bool GrMtlCaps::onCanCopySurface(const GrSurfaceProxy* dst, const GrSurfaceProxy
                                   dst == src);
 }
 
-void GrMtlCaps::initGrCaps(const id<MTLDevice> device) {
+void GrMtlCaps::initGrCaps(id<MTLDevice> device) {
     // Max vertex attribs is the same on all devices
     fMaxVertexAttributes = 31;
 
@@ -269,26 +322,19 @@ void GrMtlCaps::initGrCaps(const id<MTLDevice> device) {
     // We always copy in/out of a transfer buffer so it's trivial to support row bytes.
     fReadPixelsRowBytesSupport = true;
     fWritePixelsRowBytesSupport = true;
+    fTransferPixelsToRowBytesSupport = true;
 
     // RenderTarget and Texture size
-    if (this->isMac()) {
+    if (this->isMac() || fFamilyGroup >= 3) {
         fMaxRenderTargetSize = 16384;
     } else {
-        if (3 == fFamilyGroup) {
-            fMaxRenderTargetSize = 16384;
-        } else {
-            // Family group 1 and 2 support 8192 for version 2 and above, 4096 for v1
-            if (1 == fVersion) {
-                fMaxRenderTargetSize = 4096;
-            } else {
-                fMaxRenderTargetSize = 8192;
-            }
-        }
+        fMaxRenderTargetSize = 8192;
     }
     fMaxPreferredRenderTargetSize = fMaxRenderTargetSize;
     fMaxTextureSize = fMaxRenderTargetSize;
 
     fMaxPushConstantsSize = 4*1024;
+    fTransferBufferAlignment = 1;
 
     // Init sample counts. All devices support 1 (i.e. 0 in skia).
     fSampleCounts.push_back(1);
@@ -327,16 +373,14 @@ void GrMtlCaps::initGrCaps(const id<MTLDevice> device) {
     fTextureBarrierSupport = false; // Need to figure out if we can do this
 
     fSampleLocationsSupport = false;
-    fMultisampleDisableSupport = false;
 
     if (@available(macOS 10.11, iOS 9.0, *)) {
-        if (this->isMac() || 3 == fFamilyGroup) {
+        if (this->isMac() || fFamilyGroup >= 3) {
             fDrawInstancedSupport = true;
             fNativeDrawIndirectSupport = true;
         }
     }
 
-    fMixedSamplesSupport = false;
     fGpuTracingSupport = false;
 
     fFenceSyncSupport = true;
@@ -366,7 +410,7 @@ bool GrMtlCaps::isFormatSRGB(const GrBackendFormat& format) const {
     return format_is_srgb(GrBackendFormatAsMTLPixelFormat(format));
 }
 
-bool GrMtlCaps::isFormatTexturable(const GrBackendFormat& format) const {
+bool GrMtlCaps::isFormatTexturable(const GrBackendFormat& format, GrTextureType) const {
     MTLPixelFormat mtlFormat = GrBackendFormatAsMTLPixelFormat(format);
     return this->isFormatTexturable(mtlFormat);
 }
@@ -447,7 +491,6 @@ void GrMtlCaps::initShaderCaps() {
     shaderCaps->fPreferFlatInterpolation = true;
 
     shaderCaps->fShaderDerivativeSupport = true;
-    shaderCaps->fGeometryShaderSupport = false;
 
     if (@available(macOS 10.12, iOS 11.0, *)) {
         shaderCaps->fDualSourceBlendingSupport = true;
@@ -455,7 +498,7 @@ void GrMtlCaps::initShaderCaps() {
         shaderCaps->fDualSourceBlendingSupport = false;
     }
 
-    // TODO: Re-enable this once skbug:8720 is fixed. Will also need to remove asserts in
+    // TODO(skia:8270): Re-enable this once bug 8270 is fixed. Will also need to remove asserts in
     // GrMtlPipelineStateBuilder which assert we aren't using this feature.
 #if 0
     if (this->isIOS()) {
@@ -467,13 +510,27 @@ void GrMtlCaps::initShaderCaps() {
     shaderCaps->fDstReadInShaderSupport = shaderCaps->fFBFetchSupport;
 
     shaderCaps->fIntegerSupport = true;
-    shaderCaps->fVertexIDSupport = false;
+    shaderCaps->fNonsquareMatrixSupport = true;
+    shaderCaps->fInverseHyperbolicSupport = true;
+    shaderCaps->fVertexIDSupport = true;
+    shaderCaps->fInfinitySupport = true;
+    shaderCaps->fNonconstantArrayIndexSupport = true;
 
     // Metal uses IEEE float and half floats so assuming those values here.
     shaderCaps->fFloatIs32Bits = true;
     shaderCaps->fHalfIs32Bits = false;
 
     shaderCaps->fMaxFragmentSamplers = 16;
+
+    shaderCaps->fCanUseFastMath = true;
+}
+
+void GrMtlCaps::applyDriverCorrectnessWorkarounds(const GrContextOptions&,
+                                                  const id<MTLDevice> device) {
+    // TODO: We may need to disable the fastmath option on Intel devices to avoid corruption
+//    if ([device.name rangeOfString:@"Intel"].location != NSNotFound) {
+//        fShaderCaps->fCanUseFastMath = false;
+//    }
 }
 
 // Define this so we can use it to initialize arrays and work around
@@ -912,7 +969,7 @@ bool GrMtlCaps::onSurfaceSupportsWritePixels(const GrSurface* surface) const {
 GrCaps::SurfaceReadPixelsSupport GrMtlCaps::surfaceSupportsReadPixels(
         const GrSurface* surface) const {
     if (auto mtlRT = static_cast<const GrMtlRenderTarget*>(surface->asRenderTarget())) {
-        if (mtlRT->numSamples() > 1 && !mtlRT->mtlResolveTexture()) {
+        if (mtlRT->numSamples() > 1 && !mtlRT->resolveAttachment()) {
             return SurfaceReadPixelsSupport::kCopyToTexture2D;
         }
     }
@@ -990,7 +1047,7 @@ GrSwizzle GrMtlCaps::onGetReadSwizzle(const GrBackendFormat& format, GrColorType
             return ctInfo.fReadSwizzle;
         }
     }
-    SkDEBUGFAILF("Illegal color type (%d) and format (%d) combination.", colorType,
+    SkDEBUGFAILF("Illegal color type (%d) and format (%d) combination.", (int)colorType,
                  static_cast<int>(mtlFormat));
     return {};
 }
@@ -1005,7 +1062,7 @@ GrSwizzle GrMtlCaps::getWriteSwizzle(const GrBackendFormat& format, GrColorType 
             return ctInfo.fWriteSwizzle;
         }
     }
-    SkDEBUGFAILF("Illegal color type (%d) and format (%d) combination.", colorType,
+    SkDEBUGFAILF("Illegal color type (%d) and format (%d) combination.", (int)colorType,
                  static_cast<int>(mtlFormat));
     return {};
 }
@@ -1077,28 +1134,20 @@ GrCaps::SupportedRead GrMtlCaps::onSupportedReadPixelsColorType(
  * pipeline. This includes blending information and primitive type. The pipeline is immutable
  * so any remaining dynamic state is set via the MtlRenderCmdEncoder.
  */
-GrProgramDesc GrMtlCaps::makeDesc(GrRenderTarget* rt,
-                                  const GrProgramInfo& programInfo,
+GrProgramDesc GrMtlCaps::makeDesc(GrRenderTarget*, const GrProgramInfo& programInfo,
                                   ProgramDescOverrideFlags overrideFlags) const {
     SkASSERT(overrideFlags == ProgramDescOverrideFlags::kNone);
     GrProgramDesc desc;
-    GrProgramDesc::Build(&desc, rt, programInfo, *this);
+    GrProgramDesc::Build(&desc, programInfo, *this);
 
     GrProcessorKeyBuilder b(desc.key());
 
     // If ordering here is changed, update getStencilPixelFormat() below
     b.add32(programInfo.backendFormat().asMtlFormat());
 
-    b.add32(programInfo.numRasterSamples());
+    b.add32(programInfo.numSamples());
 
-#ifdef SK_DEBUG
-    if (rt && programInfo.isStencilEnabled()) {
-        SkASSERT(rt->getStencilAttachment());
-    }
-#endif
-
-    b.add32(rt && rt->getStencilAttachment() ? this->preferredStencilFormat()
-                                              : MTLPixelFormatInvalid);
+    b.add32(programInfo.needsStencil() ? this->preferredStencilFormat() : MTLPixelFormatInvalid);
     b.add32((uint32_t)programInfo.isStencilEnabled());
     // Stencil samples don't seem to be tracked in the MTLRenderPipeline
 
@@ -1120,6 +1169,12 @@ MTLPixelFormat GrMtlCaps::getStencilPixelFormat(const GrProgramDesc& desc) {
     readBuffer.readUInt();
 
     return (MTLPixelFormat) readBuffer.readUInt();
+}
+
+bool GrMtlCaps::renderTargetSupportsDiscardableMSAA(const GrMtlRenderTarget* rt) const {
+    return rt->resolveAttachment() &&
+           !rt->resolveAttachment()->framebufferOnly() &&
+           (rt->numSamples() > 1 && this->preferDiscardableMSAAAttachment());
 }
 
 #if GR_TEST_UTILS
@@ -1172,20 +1227,18 @@ void GrMtlCaps::onDumpJSON(SkJSONWriter* writer) const {
     writer->appendS32("total bytes", GrMtlFormatBytesPerBlock(fPreferredStencilFormat));
     writer->endObject();
 
-    switch (fPlatform) {
-        case Platform::kMac:
-            writer->appendString("Platform", "Mac");
+    switch (fGPUFamily) {
+        case GPUFamily::kMac:
+            writer->appendString("GPU Family", "Mac");
             break;
-        case Platform::kIOS:
-            writer->appendString("Platform", "iOS");
+        case GPUFamily::kApple:
+            writer->appendString("GPU Family", "Apple");
             break;
         default:
-            writer->appendString("Platform", "unknown");
+            writer->appendString("GPU Family", "unknown");
             break;
     }
-
     writer->appendS32("Family Group", fFamilyGroup);
-    writer->appendS32("Version", fVersion);
 
     writer->beginArray("Sample Counts");
     for (int v : fSampleCounts) {
@@ -1198,3 +1251,5 @@ void GrMtlCaps::onDumpJSON(SkJSONWriter* writer) const {
 #else
 void GrMtlCaps::onDumpJSON(SkJSONWriter* writer) const { }
 #endif
+
+GR_NORETAIN_END

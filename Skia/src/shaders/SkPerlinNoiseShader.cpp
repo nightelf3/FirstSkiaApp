@@ -21,12 +21,11 @@
 
 #if SK_SUPPORT_GPU
 #include "include/gpu/GrRecordingContext.h"
+#include "src/gpu/GrFragmentProcessor.h"
 #include "src/gpu/GrRecordingContextPriv.h"
 #include "src/gpu/SkGr.h"
 #include "src/gpu/effects/GrMatrixEffect.h"
 #include "src/gpu/effects/GrTextureEffect.h"
-#include "src/gpu/effects/generated/GrConstColorProcessor.h"
-#include "src/gpu/glsl/GrGLSLFragmentProcessor.h"
 #include "src/gpu/glsl/GrGLSLFragmentShaderBuilder.h"
 #include "src/gpu/glsl/GrGLSLProgramDataManager.h"
 #include "src/gpu/glsl/GrGLSLUniformHandler.h"
@@ -304,8 +303,7 @@ public:
 
     skvm::Color onProgram(skvm::Builder*,
                           skvm::Coord, skvm::Coord, skvm::Color,
-                          const SkMatrixProvider&, const SkMatrix*,
-                          SkFilterQuality, const SkColorInfo&,
+                          const SkMatrixProvider&, const SkMatrix*, const SkColorInfo&,
                           skvm::Uniforms*, SkArenaAlloc*) const override {
         // TODO?
         return {};
@@ -571,24 +569,6 @@ void SkPerlinNoiseShaderImpl::PerlinNoiseShaderContext::shadeSpan(
 
 #if SK_SUPPORT_GPU
 
-class GrGLPerlinNoise : public GrGLSLFragmentProcessor {
-public:
-    void emitCode(EmitArgs&) override;
-
-    static inline void GenKey(const GrProcessor&, const GrShaderCaps&, GrProcessorKeyBuilder* b);
-
-protected:
-    void onSetData(const GrGLSLProgramDataManager&, const GrFragmentProcessor&) override;
-
-private:
-    GrGLSLProgramDataManager::UniformHandle fStitchDataUni;
-    GrGLSLProgramDataManager::UniformHandle fBaseFrequencyUni;
-
-    using INHERITED = GrGLSLFragmentProcessor;
-};
-
-/////////////////////////////////////////////////////////////////////
-
 class GrPerlinNoise2Effect : public GrFragmentProcessor {
 public:
     static std::unique_ptr<GrFragmentProcessor> Make(
@@ -628,13 +608,22 @@ public:
     int numOctaves() const { return fNumOctaves; }
 
 private:
-    std::unique_ptr<GrGLSLFragmentProcessor> onMakeProgramImpl() const override {
-        return std::make_unique<GrGLPerlinNoise>();
+    class Impl : public ProgramImpl {
+    public:
+        void emitCode(EmitArgs&) override;
+
+    private:
+        void onSetData(const GrGLSLProgramDataManager&, const GrFragmentProcessor&) override;
+
+        GrGLSLProgramDataManager::UniformHandle fStitchDataUni;
+        GrGLSLProgramDataManager::UniformHandle fBaseFrequencyUni;
+    };
+
+    std::unique_ptr<ProgramImpl> onMakeProgramImpl() const override {
+        return std::make_unique<Impl>();
     }
 
-    void onGetGLSLProcessorKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const override {
-        GrGLPerlinNoise::GenKey(*this, caps, b);
-    }
+    void onAddToKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const override;
 
     bool onIsEqual(const GrFragmentProcessor& sBase) const override {
         const GrPerlinNoise2Effect& s = sBase.cast<GrPerlinNoise2Effect>();
@@ -662,15 +651,11 @@ private:
     }
 
     GrPerlinNoise2Effect(const GrPerlinNoise2Effect& that)
-            : INHERITED(kGrPerlinNoise2Effect_ClassID, kNone_OptimizationFlags)
+            : INHERITED(that)
             , fType(that.fType)
             , fNumOctaves(that.fNumOctaves)
             , fStitchTiles(that.fStitchTiles)
-            , fPaintingData(new SkPerlinNoiseShaderImpl::PaintingData(*that.fPaintingData)) {
-        this->cloneAndRegisterAllChildProcessors(that);
-        this->setUsesSampleCoordsDirectly();
-    }
-
+            , fPaintingData(new SkPerlinNoiseShaderImpl::PaintingData(*that.fPaintingData)) {}
 
     GR_DECLARE_FRAGMENT_PROCESSOR_TEST
 
@@ -691,12 +676,11 @@ std::unique_ptr<GrFragmentProcessor> GrPerlinNoise2Effect::TestCreate(GrProcesso
     int      numOctaves = d->fRandom->nextRangeU(2, 10);
     bool     stitchTiles = d->fRandom->nextBool();
     SkScalar seed = SkIntToScalar(d->fRandom->nextU());
-    SkISize  tileSize = SkISize::Make(d->fRandom->nextRangeU(4, 4096),
-                                      d->fRandom->nextRangeU(4, 4096));
-    SkScalar baseFrequencyX = d->fRandom->nextRangeScalar(0.01f,
-                                                          0.99f);
-    SkScalar baseFrequencyY = d->fRandom->nextRangeScalar(0.01f,
-                                                          0.99f);
+    SkISize  tileSize;
+    tileSize.fWidth = d->fRandom->nextRangeU(4, 4096);
+    tileSize.fHeight = d->fRandom->nextRangeU(4, 4096);
+    SkScalar baseFrequencyX = d->fRandom->nextRangeScalar(0.01f, 0.99f);
+    SkScalar baseFrequencyY = d->fRandom->nextRangeScalar(0.01f, 0.99f);
 
     sk_sp<SkShader> shader(d->fRandom->nextBool() ?
         SkPerlinNoiseShader::MakeFractalNoise(baseFrequencyX, baseFrequencyY, numOctaves, seed,
@@ -709,7 +693,7 @@ std::unique_ptr<GrFragmentProcessor> GrPerlinNoise2Effect::TestCreate(GrProcesso
 }
 #endif
 
-void GrGLPerlinNoise::emitCode(EmitArgs& args) {
+void GrPerlinNoise2Effect::Impl::emitCode(EmitArgs& args) {
     const GrPerlinNoise2Effect& pne = args.fFp.cast<GrPerlinNoise2Effect>();
 
     GrGLSLFPFragmentBuilder* fragBuilder = args.fFragBuilder;
@@ -895,15 +879,25 @@ void GrGLPerlinNoise::emitCode(EmitArgs& args) {
     fragBuilder->codeAppendf("return half4(color.rgb * color.aaa, color.a);");
 }
 
-void GrGLPerlinNoise::GenKey(const GrProcessor& processor, const GrShaderCaps&,
-                             GrProcessorKeyBuilder* b) {
+void GrPerlinNoise2Effect::Impl::onSetData(const GrGLSLProgramDataManager& pdman,
+                                           const GrFragmentProcessor& processor) {
     const GrPerlinNoise2Effect& turbulence = processor.cast<GrPerlinNoise2Effect>();
 
-    uint32_t key = turbulence.numOctaves();
+    const SkVector& baseFrequency = turbulence.baseFrequency();
+    pdman.set2f(fBaseFrequencyUni, baseFrequency.fX, baseFrequency.fY);
 
-    key = key << 3; // Make room for next 3 bits
+    if (turbulence.stitchTiles()) {
+        const SkPerlinNoiseShaderImpl::StitchData& stitchData = turbulence.stitchData();
+        pdman.set2f(fStitchDataUni,
+                    SkIntToScalar(stitchData.fWidth),
+                    SkIntToScalar(stitchData.fHeight));
+    }
+}
 
-    switch (turbulence.type()) {
+void GrPerlinNoise2Effect::onAddToKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const {
+    uint32_t key = fNumOctaves;
+    key = key << 3;  // Make room for next 3 bits
+    switch (fType) {
         case SkPerlinNoiseShaderImpl::kFractalNoise_Type:
             key |= 0x1;
             break;
@@ -914,28 +908,10 @@ void GrGLPerlinNoise::GenKey(const GrProcessor& processor, const GrShaderCaps&,
             // leave key at 0
             break;
     }
-
-    if (turbulence.stitchTiles()) {
+    if (fStitchTiles) {
         key |= 0x4; // Flip the 3rd bit if tile stitching is on
     }
-
     b->add32(key);
-}
-
-void GrGLPerlinNoise::onSetData(const GrGLSLProgramDataManager& pdman,
-                                const GrFragmentProcessor& processor) {
-    INHERITED::onSetData(pdman, processor);
-
-    const GrPerlinNoise2Effect& turbulence = processor.cast<GrPerlinNoise2Effect>();
-
-    const SkVector& baseFrequency = turbulence.baseFrequency();
-    pdman.set2f(fBaseFrequencyUni, baseFrequency.fX, baseFrequency.fY);
-
-    if (turbulence.stitchTiles()) {
-        const SkPerlinNoiseShaderImpl::StitchData& stitchData = turbulence.stitchData();
-        pdman.set2f(fStitchDataUni, SkIntToScalar(stitchData.fWidth),
-                                    SkIntToScalar(stitchData.fHeight));
-    }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -965,39 +941,31 @@ std::unique_ptr<GrFragmentProcessor> SkPerlinNoiseShaderImpl::asFragmentProcesso
 
     if (0 == fNumOctaves) {
         if (kFractalNoise_Type == fType) {
-            // Extract the incoming alpha and emit rgba = (a/4, a/4, a/4, a/2)
+            // Incoming alpha is assumed to be 1. So emit rgba = (1/4, 1/4, 1/4, 1/2)
             // TODO: Either treat the output of this shader as sRGB or allow client to specify a
             // color space of the noise. Either way, this case (and the GLSL) need to convert to
             // the destination.
-            auto inner = GrFragmentProcessor::ModulateRGBA(
-                    /*child=*/nullptr, SkPMColor4f::FromBytes_RGBA(0x80404040));
-            return GrFragmentProcessor::MulChildByInputAlpha(std::move(inner));
+            return GrFragmentProcessor::MakeColor(SkPMColor4f::FromBytes_RGBA(0x80404040));
         }
         // Emit zero.
-        return GrConstColorProcessor::Make(SK_PMColor4fTRANSPARENT);
+        return GrFragmentProcessor::MakeColor(SK_PMColor4fTRANSPARENT);
     }
 
-    // Need to assert that the textures we'll create are power of 2 so that now copy is needed. We
-    // also know that we will not be using mipmaps. If things things weren't true we should go
-    // through GrBitmapTextureMaker to handle needed copies.
     const SkBitmap& permutationsBitmap = paintingData->getPermutationsBitmap();
-    SkASSERT(SkIsPow2(permutationsBitmap.width()) && SkIsPow2(permutationsBitmap.height()));
-    auto permutationsView = GrMakeCachedBitmapProxyView(context, permutationsBitmap);
+    const SkBitmap& noiseBitmap        = paintingData->getNoiseBitmap();
 
-    const SkBitmap& noiseBitmap = paintingData->getNoiseBitmap();
-    SkASSERT(SkIsPow2(noiseBitmap.width()) && SkIsPow2(noiseBitmap.height()));
-    auto noiseView = GrMakeCachedBitmapProxyView(context, noiseBitmap);
+    auto permutationsView = std::get<0>(GrMakeCachedBitmapProxyView(context, permutationsBitmap));
+    auto noiseView        = std::get<0>(GrMakeCachedBitmapProxyView(context, noiseBitmap));
 
-    if (permutationsView.proxy() && noiseView.proxy()) {
-        auto inner = GrPerlinNoise2Effect::Make(fType,
-                                                fNumOctaves,
-                                                fStitchTiles,
-                                                std::move(paintingData),
-                                                std::move(permutationsView),
-                                                std::move(noiseView),
-                                                m,
-                                                *context->priv().caps());
-        return GrFragmentProcessor::MulChildByInputAlpha(std::move(inner));
+    if (permutationsView && noiseView) {
+        return GrPerlinNoise2Effect::Make(fType,
+                                          fNumOctaves,
+                                          fStitchTiles,
+                                          std::move(paintingData),
+                                          std::move(permutationsView),
+                                          std::move(noiseView),
+                                          m,
+                                          *context->priv().caps());
     }
     return nullptr;
 }

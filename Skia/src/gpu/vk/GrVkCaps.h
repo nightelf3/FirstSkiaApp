@@ -10,11 +10,11 @@
 
 #include "include/gpu/vk/GrVkTypes.h"
 #include "src/gpu/GrCaps.h"
-#include "src/gpu/vk/GrVkAttachment.h"
 
 class GrShaderCaps;
 class GrVkExtensions;
 struct GrVkInterface;
+class GrVkRenderTarget;
 
 /**
  * Stores some capabilities of a Vk backend.
@@ -36,7 +36,7 @@ public:
 
     bool isFormatSRGB(const GrBackendFormat&) const override;
 
-    bool isFormatTexturable(const GrBackendFormat&) const override;
+    bool isFormatTexturable(const GrBackendFormat&, GrTextureType) const override;
     bool isVkFormatTexturable(VkFormat) const;
 
     bool isFormatCopyable(const GrBackendFormat&) const override { return true; }
@@ -74,6 +74,10 @@ public:
         const uint16_t& flags = linearTiled ? info.fLinearFlags : info.fOptimalFlags;
         return SkToBool(FormatInfo::kBlitSrc_Flag & flags);
     }
+
+    // Gets the GrColorType that should be used to transfer data in/out of a transfer buffer to
+    // write/read data when using a VkFormat with a specified color type.
+    GrColorType transferColorType(VkFormat, GrColorType surfaceColorType) const;
 
     // On some GPUs (Windows Nvidia and Imagination) calls to QueueWaitIdle return before actually
     // signalling the fences on the command buffers even though they have completed. This causes
@@ -143,8 +147,23 @@ public:
     // Returns true if it supports ycbcr conversion for samplers
     bool supportsYcbcrConversion() const { return fSupportsYcbcrConversion; }
 
+    // Returns the number of descriptor slots used by immutable ycbcr VkImages.
+    //
+    // TODO: We should update this to return a count for a specific format or external format. We
+    // can use vkGetPhysicalDeviceImageFormatProperties2 with a
+    // VkSamplerYcbcrConversionImageFormatProperties to query this. However, right now that call
+    // does not support external android formats which is where the majority of ycbcr images are
+    // coming from. So for now we stay safe and always return 3 here which is the max value that the
+    // count could be for any format.
+    uint32_t ycbcrCombinedImageSamplerDescriptorCount() const {
+        return 3;
+    }
+
     // Returns true if the device supports protected memory.
     bool supportsProtectedMemory() const { return fSupportsProtectedMemory; }
+
+    // Returns true if the VK_EXT_image_drm_format_modifier is enabled.
+    bool supportsDRMFormatModifiers() const { return fSupportsDRMFormatModifiers; }
 
     // Returns whether we prefer to record draws directly into a primary command buffer.
     bool preferPrimaryOverSecondaryCommandBuffers() const {
@@ -242,10 +261,16 @@ public:
     // like normal.
     // This flag is similar to enabling gl render to texture for msaa rendering.
     bool preferDiscardableMSAAAttachment() const { return fPreferDiscardableMSAAAttachment; }
-
     bool mustLoadFullImageWithDiscardableMSAA() const {
         return fMustLoadFullImageWithDiscardableMSAA;
     }
+    bool supportsDiscardableMSAAForDMSAA() const { return fSupportsDiscardableMSAAForDMSAA; }
+    bool renderTargetSupportsDiscardableMSAA(const GrVkRenderTarget*) const;
+    bool programInfoWillUseDiscardableMSAA(const GrProgramInfo&) const;
+
+    bool dmsaaResolveCanBeUsedAsTextureInSameRenderPass() const override { return false; }
+
+    bool supportsMemorylessAttachments() const { return fSupportsMemorylessAttachments; }
 
 #if GR_TEST_UTILS
     std::vector<TestFormatColorTypeCombination> getTestingCombinations() const override;
@@ -289,11 +314,14 @@ private:
 
     GrSwizzle onGetReadSwizzle(const GrBackendFormat&, GrColorType) const override;
 
-    GrDstSampleType onGetDstSampleTypeForProxy(const GrRenderTargetProxy*) const override;
+    GrDstSampleFlags onGetDstSampleFlagsForProxy(const GrRenderTargetProxy*) const override;
+
+    bool onSupportsDynamicMSAA(const GrRenderTargetProxy*) const override;
 
     // ColorTypeInfo for a specific format
     struct ColorTypeInfo {
         GrColorType fColorType = GrColorType::kUnknown;
+        GrColorType fTransferColorType = GrColorType::kUnknown;
         enum {
             kUploadData_Flag = 0x1,
             // Does Ganesh itself support rendering to this colorType & format pair. Renderability
@@ -375,6 +403,8 @@ private:
 
     bool fSupportsProtectedMemory = false;
 
+    bool fSupportsDRMFormatModifiers = false;
+
     bool fPreferPrimaryOverSecondaryCommandBuffers = true;
     bool fMustInvalidatePrimaryCmdBufferStateAfterClearAttachments = false;
 
@@ -391,6 +421,8 @@ private:
 
     bool fPreferDiscardableMSAAAttachment = false;
     bool fMustLoadFullImageWithDiscardableMSAA = false;
+    bool fSupportsDiscardableMSAAForDMSAA = true;
+    bool fSupportsMemorylessAttachments = false;
 
     uint32_t fMaxDrawIndirectDrawCount = 0;
 

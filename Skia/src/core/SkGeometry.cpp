@@ -13,6 +13,7 @@
 #include "src/core/SkGeometry.h"
 #include "src/core/SkPointPriv.h"
 
+#include <algorithm>
 #include <tuple>
 #include <utility>
 
@@ -202,7 +203,7 @@ SkVector SkFindBisector(SkVector a, SkVector b) {
     // Return "normalize(v[0]) + normalize(v[1])".
     Sk2f x0_x1, y0_y1;
     Sk2f::Load2(v.data(), &x0_x1, &y0_y1);
-    Sk2f invLengths = (x0_x1 * x0_x1 + y0_y1 * y0_y1).rsqrt();
+    Sk2f invLengths = 1.0f / (x0_x1 * x0_x1 + y0_y1 * y0_y1).sqrt();
     x0_x1 *= invLengths;
     y0_y1 *= invLengths;
     return SkPoint{x0_x1[0] + x0_x1[1], y0_y1[0] + y0_y1[1]};
@@ -346,12 +347,12 @@ SkScalar SkFindQuadMaxCurvature(const SkPoint src[3]) {
 
 int SkChopQuadAtMaxCurvature(const SkPoint src[3], SkPoint dst[5]) {
     SkScalar t = SkFindQuadMaxCurvature(src);
-    if (t == 0 || t == 1) {
-        memcpy(dst, src, 3 * sizeof(SkPoint));
-        return 1;
-    } else {
+    if (t > 0 && t < 1) {
         SkChopQuadAt(src, dst, t);
         return 2;
+    } else {
+        memcpy(dst, src, 3 * sizeof(SkPoint));
+        return 1;
     }
 }
 
@@ -525,13 +526,8 @@ void SkChopCubicAt(const SkPoint src[4], SkPoint dst[],
                    const SkScalar tValues[], int tCount) {
     using float2 = skvx::Vec<2,float>;
 
-#ifdef SK_DEBUG
-    float lastT = 0;
-    for (int i = 0; i < tCount; i++) {
-        SkASSERT(lastT <= tValues[i] && tValues[i] <= 1);
-        lastT = tValues[i];
-    }
-#endif
+    SkASSERT(std::all_of(tValues, tValues + tCount, [](SkScalar t) { return t >= 0 && t <= 1; }));
+    SkASSERT(std::is_sorted(tValues, tValues + tCount));
 
     if (dst) {
         if (tCount == 0) { // nothing to chop

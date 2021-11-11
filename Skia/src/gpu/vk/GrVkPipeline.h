@@ -10,9 +10,11 @@
 
 #include "include/gpu/vk/GrVkTypes.h"
 #include "include/private/GrTypesPriv.h"
-#include "src/gpu/GrPrimitiveProcessor.h"
+#include "src/gpu/GrGeometryProcessor.h"
 #include "src/gpu/GrXferProcessor.h"
 #include "src/gpu/vk/GrVkManagedResource.h"
+
+#include <cinttypes>
 
 class GrPipeline;
 class GrProgramInfo;
@@ -27,14 +29,13 @@ struct SkIRect;
 class GrVkPipeline : public GrVkManagedResource {
 public:
     static sk_sp<GrVkPipeline> Make(GrVkGpu*,
-                                    const GrPrimitiveProcessor::AttributeSet& vertexAttribs,
-                                    const GrPrimitiveProcessor::AttributeSet& instanceAttribs,
+                                    const GrGeometryProcessor::AttributeSet& vertexAttribs,
+                                    const GrGeometryProcessor::AttributeSet& instanceAttribs,
                                     GrPrimitiveType,
                                     GrSurfaceOrigin,
                                     const GrStencilSettings&,
-                                    int numRasterSamples,
+                                    int numSamples,
                                     bool isHWAntialiasState,
-                                    bool isMixedSampled,
                                     const GrXferProcessor::BlendInfo&,
                                     bool isWireframe,
                                     bool useConservativeRaster,
@@ -61,9 +62,13 @@ public:
         return fPipelineLayout;
     }
 
-    static void SetDynamicScissorRectState(GrVkGpu*, GrVkCommandBuffer*, const GrRenderTarget*,
+    static void SetDynamicScissorRectState(GrVkGpu*,
+                                           GrVkCommandBuffer*,
+                                           SkISize colorAttachmentDimensions,
                                            GrSurfaceOrigin, const SkIRect& scissorRect);
-    static void SetDynamicViewportState(GrVkGpu*, GrVkCommandBuffer*, const GrRenderTarget*);
+    static void SetDynamicViewportState(GrVkGpu*,
+                                        GrVkCommandBuffer*,
+                                        SkISize colorAttachmentDimensions);
     static void SetDynamicBlendConstantState(GrVkGpu*,
                                              GrVkCommandBuffer*,
                                              const GrSwizzle& writeSwizzle,
@@ -71,7 +76,7 @@ public:
 
 #ifdef SK_TRACE_MANAGED_RESOURCES
     void dumpInfo() const override {
-        SkDebugf("GrVkPipeline: %d (%d refs)\n", fPipeline, this->getRefCnt());
+        SkDebugf("GrVkPipeline: %" PRIdPTR " (%d refs)\n", (intptr_t)fPipeline, this->getRefCnt());
     }
 #endif
 

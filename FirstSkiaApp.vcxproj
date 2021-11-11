@@ -91,15 +91,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SK_GL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build</AdditionalLibraryDirectories>
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"
+      <Command>xcopy /y "$(ProjectDir)Skia\build\skia.dll" "$(OutDir)"
 xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -111,17 +112,18 @@ xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SK_GL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build</AdditionalLibraryDirectories>
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(ProjectDir)Skia\$(Configuration)\skia.dll" "$(OutDir)"
+      <Command>xcopy /y "$(ProjectDir)Skia\build\skia.dll" "$(OutDir)"
 xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

@@ -172,11 +172,13 @@ public:
             const SkMatrix& drawMatrix,
             const SkGlyphPositionRoundingSpec& roundingSpec);
 
+    SkString dumpInput() const;
+
     // The input of SkPackedGlyphIDs
     SkZip<SkGlyphVariant, SkPoint> input() {
         SkASSERT(fPhase == kInput);
         SkDEBUGCODE(fPhase = kProcess);
-        return SkZip<SkGlyphVariant, SkPoint>{fInputSize, fMultiBuffer, fPositions};
+        return SkZip<SkGlyphVariant, SkPoint>{fInputSize, fMultiBuffer.get(), fPositions};
     }
 
     // Store the glyph in the next drawable slot, using the position information located at index
@@ -203,7 +205,7 @@ public:
     SkZip<SkGlyphVariant, SkPoint> drawable() {
         SkASSERT(fPhase == kProcess);
         SkDEBUGCODE(fPhase = kDraw);
-        return SkZip<SkGlyphVariant, SkPoint>{fDrawableSize, fMultiBuffer, fPositions};
+        return SkZip<SkGlyphVariant, SkPoint>{fDrawableSize, fMultiBuffer.get(), fPositions};
     }
 
     bool drawableIsEmpty() const {
@@ -224,7 +226,7 @@ private:
     size_t fMaxSize{0};
     size_t fInputSize{0};
     size_t fDrawableSize{0};
-    SkAutoTMalloc<SkGlyphVariant> fMultiBuffer;
+    SkAutoTArray<SkGlyphVariant> fMultiBuffer;
     SkAutoTMalloc<SkPoint> fPositions;
 
 #ifdef SK_DEBUG

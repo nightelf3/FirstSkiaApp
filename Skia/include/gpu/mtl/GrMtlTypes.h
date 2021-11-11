@@ -14,12 +14,14 @@
 /**
  * Declares typedefs for Metal types used in Ganesh cpp code
  */
-typedef unsigned int GrMTLPixelFormat;
-typedef const void*  GrMTLHandle;
+using GrMTLPixelFormat = unsigned int;
+using GrMTLTextureUsage = unsigned int;
+using GrMTLStorageMode = unsigned int;
+using GrMTLHandle = const void*;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef SK_METAL
+#ifdef __APPLE__
 
 #include <TargetConditionals.h>
 
@@ -29,28 +31,6 @@ typedef const void*  GrMTLHandle;
 #define SK_API_AVAILABLE_CA_METAL_LAYER SK_API_AVAILABLE(macos(10.11), ios(8.0))
 #endif  // TARGET_OS_SIMULATOR
 
-#if defined(SK_BUILD_FOR_MAC)
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
-#define GR_METAL_SDK_VERSION 230
-#elif __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500
-#define GR_METAL_SDK_VERSION 220
-#elif __MAC_OS_X_VERSION_MAX_ALLOWED >= 101400
-#define GR_METAL_SDK_VERSION 210
-#else
-#error Must use at least 10.14 SDK to build Metal backend for MacOS
-#endif
-#else
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 || __TV_OS_VERSION_MAX_ALLOWED >= 140000
-#define GR_METAL_SDK_VERSION 230
-#elif __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
-#define GR_METAL_SDK_VERSION 220
-#elif __IPHONE_OS_VERSION_MAX_ALLOWED >= 120000 || __TV_OS_VERSION_MAX_ALLOWED >= 120000
-#define GR_METAL_SDK_VERSION 210
-#else
-#error Must use at least 12.00 SDK to build Metal backend for iOS
-#endif
-#endif
-
 /**
  * Types for interacting with Metal resources created externally to Skia.
  * This is used by GrBackendObjects.
@@ -59,11 +39,23 @@ struct GrMtlTextureInfo {
 public:
     GrMtlTextureInfo() {}
 
-    sk_cfp<const void*> fTexture;
+    sk_cfp<GrMTLHandle> fTexture;
 
     bool operator==(const GrMtlTextureInfo& that) const {
         return fTexture == that.fTexture;
     }
+};
+
+struct GrMtlSurfaceInfo {
+    uint32_t fSampleCount = 1;
+    uint32_t fLevelCount = 0;
+    GrProtected fProtected = GrProtected::kNo;
+
+    // Since we aren't in an Obj-C header we can't directly use Mtl types here. Each of these can
+    // cast to their mapped Mtl types list below.
+    GrMTLPixelFormat fFormat = 0;       // MTLPixelFormat fFormat = MTLPixelFormatInvalid;
+    GrMTLTextureUsage fUsage = 0;       // MTLTextureUsage fUsage = MTLTextureUsageUnknown;
+    GrMTLStorageMode fStorageMode = 0;  // MTLStorageMode fStorageMode = MTLStorageModeShared;
 };
 
 #endif

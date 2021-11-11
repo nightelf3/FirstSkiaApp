@@ -35,21 +35,24 @@ private:
     }
     bool onBindPipeline(const GrProgramInfo&, const SkRect&) override { return true; }
     void onSetScissorRect(const SkIRect&) override {}
-    bool onBindTextures(const GrPrimitiveProcessor&, const GrSurfaceProxy* const primProcTextures[],
-                        const GrPipeline&) override { return true; }
+    bool onBindTextures(const GrGeometryProcessor&,
+                        const GrSurfaceProxy* const geomProcTextures[],
+                        const GrPipeline&) override {
+        return true;
+    }
     void onBindBuffers(sk_sp<const GrBuffer> indexBuffer, sk_sp<const GrBuffer> instanceBuffer,
                        sk_sp<const GrBuffer> vertexBuffer, GrPrimitiveRestart) override {}
-    void onDraw(int, int) override { this->dummyDraw(); }
-    void onDrawIndexed(int, int, uint16_t, uint16_t, int) override { this->dummyDraw(); }
-    void onDrawInstanced(int, int, int, int) override { this->dummyDraw(); }
-    void onDrawIndexedInstanced(int, int, int, int, int) override { this->dummyDraw(); }
-    void onDrawIndirect(const GrBuffer*, size_t, int) override { this->dummyDraw(); }
-    void onDrawIndexedIndirect(const GrBuffer*, size_t, int) override { this->dummyDraw(); }
+    void onDraw(int, int) override { this->noopDraw(); }
+    void onDrawIndexed(int, int, uint16_t, uint16_t, int) override { this->noopDraw(); }
+    void onDrawInstanced(int, int, int, int) override { this->noopDraw(); }
+    void onDrawIndexedInstanced(int, int, int, int, int) override { this->noopDraw(); }
+    void onDrawIndirect(const GrBuffer*, size_t, int) override { this->noopDraw(); }
+    void onDrawIndexedIndirect(const GrBuffer*, size_t, int) override { this->noopDraw(); }
     void onClear(const GrScissorState& scissor, std::array<float, 4>) override {
         this->markRenderTargetDirty();
     }
     void onClearStencilClip(const GrScissorState& scissor, bool insideStencilMask) override {}
-    void dummyDraw() {
+    void noopDraw() {
         this->markRenderTargetDirty();
         ++fNumDraws;
     }

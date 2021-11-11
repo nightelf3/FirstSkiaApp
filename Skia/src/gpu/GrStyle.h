@@ -8,10 +8,11 @@
 #ifndef GrStyle_DEFINED
 #define GrStyle_DEFINED
 
-#include "include/core/SkPathEffect.h"
+#include "include/core/SkMatrix.h"
 #include "include/core/SkStrokeRec.h"
 #include "include/gpu/GrTypes.h"
 #include "include/private/SkTemplates.h"
+#include "src/core/SkPathEffectBase.h"
 
 /**
  * Represents the various ways that a GrStyledShape can be styled. It has fill/stroking information
@@ -170,23 +171,24 @@ public:
 
     /** Given bounds of a path compute the bounds of path with the style applied. */
     void adjustBounds(SkRect* dst, const SkRect& src) const {
-        if (this->pathEffect()) {
-            this->pathEffect()->computeFastBounds(dst, src);
-            // This may not be the correct SkStrokeRec to use. skbug.com/5299
-            // It happens to work for dashing.
-            SkScalar radius = fStrokeRec.getInflationRadius();
-            dst->outset(radius, radius);
-        } else {
-            SkScalar radius = fStrokeRec.getInflationRadius();
-            *dst = src.makeOutset(radius, radius);
+        *dst = src;
+        auto pe = as_PEB(this->pathEffect());
+        if (pe && !pe->computeFastBounds(dst)) {
+            // Restore dst == src since ComputeFastBounds leaves it undefined when returning false
+            *dst = src;
         }
+
+        // This may not be the correct SkStrokeRec to use if there's a path effect: skbug.com/5299
+        // It happens to work for dashing.
+        SkScalar radius = fStrokeRec.getInflationRadius();
+        dst->outset(radius, radius);
     }
 
 private:
     void initPathEffect(sk_sp<SkPathEffect> pe);
 
     struct DashInfo {
-        DashInfo() : fType(SkPathEffect::kNone_DashType) {}
+        DashInfo() : fType(SkPathEffectBase::kNone_DashType) {}
         DashInfo(const DashInfo& that) { *this = that; }
         DashInfo& operator=(const DashInfo& that) {
             fType = that.fType;

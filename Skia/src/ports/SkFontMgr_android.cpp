@@ -358,18 +358,6 @@ protected:
         return sset->matchStyle(style);
     }
 
-    SkTypeface* onMatchFaceStyle(const SkTypeface* typeface,
-                                 const SkFontStyle& style) const override {
-        for (int i = 0; i < fStyleSets.count(); ++i) {
-            for (int j = 0; j < fStyleSets[i]->fStyles.count(); ++j) {
-                if (fStyleSets[i]->fStyles[j].get() == typeface) {
-                    return fStyleSets[i]->matchStyle(style);
-                }
-            }
-        }
-        return nullptr;
-    }
-
     static sk_sp<SkTypeface_AndroidSystem> find_family_style_character(
             const SkString& familyName,
             const SkTArray<NameToFamily, true>& fallbackNameToFamilyMap,
@@ -484,18 +472,6 @@ protected:
 
         auto data = std::make_unique<SkFontData>(std::move(stream), args.getCollectionIndex(),
                                                    axisValues.get(), axisDefinitions.count());
-        return sk_sp<SkTypeface>(new SkTypeface_AndroidStream(std::move(data),
-                                                              style, isFixedPitch, name));
-    }
-
-    sk_sp<SkTypeface> onMakeFromFontData(std::unique_ptr<SkFontData> data) const override {
-        SkStreamAsset* stream(data->getStream());
-        bool isFixedPitch;
-        SkFontStyle style;
-        SkString name;
-        if (!fScanner.scanFont(stream, data->getIndex(), &name, &style, &isFixedPitch, nullptr)) {
-            return nullptr;
-        }
         return sk_sp<SkTypeface>(new SkTypeface_AndroidStream(std::move(data),
                                                               style, isFixedPitch, name));
     }

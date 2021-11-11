@@ -41,107 +41,73 @@ public:
         kClockwiseTestProcessor_ClassID,
         kColorTableEffect_ClassID,
         kCoverageSetOpXP_ClassID,
-        kCubicStrokeProcessor_ClassID,
         kCustomXP_ClassID,
         kDashingCircleEffect_ClassID,
         kDashingLineEffect_ClassID,
         kDefaultGeoProc_ClassID,
+        kDeviceSpace_ClassID,
         kDIEllipseGeometryProcessor_ClassID,
         kDisableColorXP_ClassID,
         kDrawAtlasPathShader_ClassID,
         kEllipseGeometryProcessor_ClassID,
         kEllipticalRRectEffect_ClassID,
+        kFwidthSquircleTestProcessor_ClassID,
         kGP_ClassID,
-        kVertexColorSpaceBenchGP_ClassID,
-        kGrArithmeticProcessor_ClassID,
-        kGrAARectEffect_ClassID,
-        kGrAlphaThresholdFragmentProcessor_ClassID,
         kGrBicubicEffect_ClassID,
         kGrBitmapTextGeoProc_ClassID,
-        kGrBlurredEdgeFragmentProcessor_ClassID,
-        kGrCCClipProcessor_ClassID,
-        kGrCCPathProcessor_ClassID,
-        kGrCircleBlurFragmentProcessor_ClassID,
-        kGrCircleEffect_ClassID,
-        kGrClampedGradientEffect_ClassID,
-        kGrClampFragmentProcessor_ClassID,
-        kGrColorMatrixFragmentProcessor_ClassID,
         kGrColorSpaceXformEffect_ClassID,
-        kGrComposeLerpEffect_ClassID,
-        kGrConfigConversionEffect_ClassID,
         kGrConicEffect_ClassID,
-        kGrConstColorProcessor_ClassID,
         kGrConvexPolyEffect_ClassID,
-        kGrDeviceSpaceEffect_ClassID,
         kGrDiffuseLightingEffect_ClassID,
         kGrDisplacementMapEffect_ClassID,
         kGrDistanceFieldA8TextGeoProc_ClassID,
         kGrDistanceFieldLCDTextGeoProc_ClassID,
         kGrDistanceFieldPathGeoProc_ClassID,
-        kGrDitherEffect_ClassID,
-        kGrDualIntervalGradientColorizer_ClassID,
-        kGrEllipseEffect_ClassID,
+        kGrDSLFPTest_DoStatement_ClassID,
+        kGrDSLFPTest_ForStatement_ClassID,
+        kGrDSLFPTest_IfStatement_ClassID,
+        kGrDSLFPTest_SwitchStatement_ClassID,
+        kGrDSLFPTest_Swizzle_ClassID,
+        kGrDSLFPTest_Ternary_ClassID,
+        kGrDSLFPTest_WhileStatement_ClassID,
         kGrFillRRectOp_Processor_ClassID,
         kGrGaussianConvolutionFragmentProcessor_ClassID,
-        kGrHighContrastFilterEffect_ClassID,
-        kGrHSLToRGBFilterEffect_ClassID,
-        kGrImprovedPerlinNoiseEffect_ClassID,
-        kGrLinearGradientLayout_ClassID,
-        kGrLumaColorFilterEffect_ClassID,
-        kGrMagnifierEffect_ClassID,
         kGrMatrixConvolutionEffect_ClassID,
         kGrMatrixEffect_ClassID,
         kGrMeshTestProcessor_ClassID,
         kGrMorphologyEffect_ClassID,
-        kGrOverrideInputFragmentProcessor_ClassID,
-        kGrPathProcessor_ClassID,
         kGrPerlinNoise2Effect_ClassID,
         kGrPipelineDynamicStateTestProcessor_ClassID,
         kGrQuadEffect_ClassID,
-        kGrRadialGradientLayout_ClassID,
-        kGrRectBlurEffect_ClassID,
-        kGrRGBToHSLFilterEffect_ClassID,
-        kGrRRectBlurEffect_ClassID,
         kGrRRectShadowGeoProc_ClassID,
-        kGrSingleIntervalGradientColorizer_ClassID,
         kGrSkSLFP_ClassID,
         kGrSpecularLightingEffect_ClassID,
-        kGrSampleMaskProcessor_ClassID,
-        kGrSweepGradientLayout_ClassID,
         kGrTextureEffect_ClassID,
-        kGrTiledGradientEffect_ClassID,
-        kGrTwoPointConicalGradientLayout_ClassID,
         kGrUnrolledBinaryGradientColorizer_ClassID,
         kGrYUVtoRGBEffect_ClassID,
-        kHighContrastFilterEffect_ClassID,
+        kHighPrecisionFragmentProcessor_ClassID,
         kLatticeGP_ClassID,
         kPDLCDXferProcessor_ClassID,
         kPorterDuffXferProcessor_ClassID,
         kPremulFragmentProcessor_ClassID,
         kQuadEdgeEffect_ClassID,
         kQuadPerEdgeAAGeometryProcessor_ClassID,
-        kSampleLocationsTestProcessor_ClassID,
         kSeriesFragmentProcessor_ClassID,
         kShaderPDXferProcessor_ClassID,
-        kStencilResolveProcessor_ClassID,
-        kFwidthSquircleTestProcessor_ClassID,
+        kSurfaceColorProcessor_ClassID,
         kSwizzleFragmentProcessor_ClassID,
-        kTessellate_GrCubicTessellateShader_ClassID,
-        kTessellate_GrFillBoundingBoxShader_ClassID,
-        kTessellate_GrFillCubicHullShader_ClassID,
-        kTessellate_GrFillTriangleShader_ClassID,
-        kTessellate_GrMiddleOutCubicShader_ClassID,
-        kTessellate_GrStencilTriangleShader_ClassID,
-        kTessellate_GrStrokeTessellateShader_ClassID,
-        kTessellate_GrWedgeTessellateShader_ClassID,
+        kTessellate_BoundingBoxShader_ClassID,
+        kTessellate_GrModulateAtlasCoverageEffect_ClassID,
+        kTessellate_GrStrokeTessellationShader_ClassID,
+        kTessellate_HardwareCurveShader_ClassID,
+        kTessellate_HardwareWedgeShader_ClassID,
+        kTessellate_HullShader_ClassID,
+        kTessellate_MiddleOutShader_ClassID,
+        kTessellate_SimpleTriangleShader_ClassID,
         kTessellationTestTriShader_ClassID,
-        kTessellationTestRectShader_ClassID,
         kTestFP_ClassID,
         kTestRectOp_ClassID,
-        kFlatNormalsFP_ClassID,
-        kMappedNormalsFP_ClassID,
-        kLightingFP_ClassID,
-        kLinearStrokeProcessor_ClassID,
+        kVertexColorSpaceBenchGP_ClassID,
         kVerticesGP_ClassID,
     };
 
@@ -155,28 +121,15 @@ public:
 #if GR_TEST_UTILS
     virtual SkString onDumpInfo() const { return SkString(); }
 
-    virtual SkString dumpInfo() const final {
+    SkString dumpInfo() const {
         SkString info(name());
         info.append(this->onDumpInfo());
         return info;
     }
 #endif
 
-    /**
-     * Custom shader features provided by the framework. These require special handling when
-     * preparing shaders, so a processor must call setWillUseCustomFeature() from its constructor if
-     * it intends to use one.
-     */
-    enum class CustomFeatures {
-        kNone = 0,
-        kSampleLocations = 1 << 0,
-    };
-
-    GR_DECL_BITFIELD_CLASS_OPS_FRIENDS(CustomFeatures);
-
-    CustomFeatures requestedFeatures() const { return fRequestedFeatures; }
-
     void* operator new(size_t size);
+    void* operator new(size_t object_size, size_t footer_size);
     void operator delete(void* target);
 
     void* operator new(size_t size, void* placement) {
@@ -196,13 +149,7 @@ protected:
     GrProcessor(const GrProcessor&) = delete;
     GrProcessor& operator=(const GrProcessor&) = delete;
 
-    void setWillUseCustomFeature(CustomFeatures feature) { fRequestedFeatures |= feature; }
-    void resetCustomFeatures() { fRequestedFeatures = CustomFeatures::kNone; }
-
     const ClassID fClassID;
-    CustomFeatures fRequestedFeatures = CustomFeatures::kNone;
 };
-
-GR_MAKE_BITFIELD_CLASS_OPS(GrProcessor::CustomFeatures)
 
 #endif

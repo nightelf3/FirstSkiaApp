@@ -13,6 +13,7 @@
 #include "include/private/SkTo.h"
 #include "src/core/SkBigPicture.h"
 #include "src/core/SkCanvasPriv.h"
+#include "src/core/SkGlyphRun.h"
 #include "src/utils/SkPatchUtils.h"
 
 #include <memory>
@@ -233,6 +234,15 @@ void SkRecorder::onDrawTextBlob(const SkTextBlob* blob, SkScalar x, SkScalar y,
     this->append<SkRecords::DrawTextBlob>(paint, sk_ref_sp(blob), x, y);
 }
 
+void SkRecorder::onDrawGlyphRunList(const SkGlyphRunList& glyphRunList, const SkPaint& paint) {
+    sk_sp<SkTextBlob> blob = sk_ref_sp(glyphRunList.blob());
+    if (glyphRunList.blob() == nullptr) {
+        blob = glyphRunList.makeBlob();
+    }
+
+    this->onDrawTextBlob(blob.get(), glyphRunList.origin().x(), glyphRunList.origin().y(), paint);
+}
+
 void SkRecorder::onDrawPicture(const SkPicture* pic, const SkMatrix* matrix, const SkPaint* paint) {
     fApproxBytesUsedBySubPictures += pic->approximateBytesUsed();
     this->append<SkRecords::DrawPicture>(this->copy(paint), sk_ref_sp(pic), matrix ? *matrix : SkMatrix::I());
@@ -313,7 +323,8 @@ SkCanvas::SaveLayerStrategy SkRecorder::getSaveLayerStrategy(const SaveLayerRec&
     this->append<SkRecords::SaveLayer>(this->copy(rec.fBounds)
                     , this->copy(rec.fPaint)
                     , sk_ref_sp(rec.fBackdrop)
-                    , rec.fSaveLayerFlags);
+                    , rec.fSaveLayerFlags
+                    , SkCanvasPriv::GetBackdropScaleFactor(rec));
     return SkCanvas::kNoLayer_SaveLayerStrategy;
 }
 
@@ -372,6 +383,11 @@ void SkRecorder::onClipShader(sk_sp<SkShader> cs, SkClipOp op) {
 void SkRecorder::onClipRegion(const SkRegion& deviceRgn, SkClipOp op) {
     INHERITED(onClipRegion, deviceRgn, op);
     this->append<SkRecords::ClipRegion>(deviceRgn, op);
+}
+
+void SkRecorder::onResetClip() {
+    INHERITED(onResetClip);
+    this->append<SkRecords::ResetClip>();
 }
 
 sk_sp<SkSurface> SkRecorder::onNewSurface(const SkImageInfo&, const SkSurfaceProps&) {

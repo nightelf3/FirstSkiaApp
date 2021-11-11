@@ -80,8 +80,7 @@ protected:
     bool onAppendStages(const SkStageRec&) const override;
 
     skvm::Color onProgram(skvm::Builder*, skvm::Coord device, skvm::Coord local, skvm::Color paint,
-                          const SkMatrixProvider&, const SkMatrix* localM,
-                          SkFilterQuality quality, const SkColorInfo& dstCS,
+                          const SkMatrixProvider&, const SkMatrix* localM, const SkColorInfo& dstCS,
                           skvm::Uniforms* uniforms, SkArenaAlloc* alloc) const override;
 
     virtual void appendGradientStages(SkArenaAlloc* alloc, SkRasterPipeline* tPipeline,
@@ -134,8 +133,8 @@ public:
 
 private:
     // Reserve inline space for up to 4 stops.
-    static constexpr size_t kInlineStopCount   = 4;
-    static constexpr size_t kInlineStorageSize = (sizeof(SkColor4f) + sizeof(SkScalar))
+    inline static constexpr size_t kInlineStopCount   = 4;
+    inline static constexpr size_t kInlineStorageSize = (sizeof(SkColor4f) + sizeof(SkScalar))
                                                * kInlineStopCount;
     SkAutoSTMalloc<kInlineStorageSize, uint8_t> fStorage;
 

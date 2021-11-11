@@ -6,11 +6,12 @@
  */
 
 #include "src/core/SkAutoMalloc.h"
+#include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrShaderUtils.h"
 #include "src/gpu/gl/GrGLGpu.h"
 #include "src/gpu/gl/builders/GrGLShaderStringBuilder.h"
 #include "src/sksl/SkSLCompiler.h"
-#include "src/sksl/SkSLGLSLCodeGenerator.h"
+#include "src/sksl/codegen/SkSLGLSLCodeGenerator.h"
 #include "src/sksl/ir/SkSLProgram.h"
 
 // Print the source code for all shaders generated.
@@ -57,7 +58,7 @@ GrGLuint GrGLCompileAndAttachShader(const GrGLContext& glCtx,
                                     const SkSL::String& glsl,
                                     GrThreadSafePipelineBuilder::Stats* stats,
                                     GrContextOptions::ShaderErrorHandler* errorHandler) {
-    TRACE_EVENT0_ALWAYS("skia.gpu", "driver_compile_shader");
+    TRACE_EVENT0_ALWAYS("skia.shaders", "driver_compile_shader");
     const GrGLInterface* gli = glCtx.glInterface();
 
     // Specify GLSL source to the driver.

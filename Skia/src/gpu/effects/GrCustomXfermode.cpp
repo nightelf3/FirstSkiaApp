@@ -12,12 +12,11 @@
 #include "src/gpu/GrPipeline.h"
 #include "src/gpu/GrProcessor.h"
 #include "src/gpu/GrShaderCaps.h"
+#include "src/gpu/GrXferProcessor.h"
 #include "src/gpu/glsl/GrGLSLBlend.h"
-#include "src/gpu/glsl/GrGLSLFragmentProcessor.h"
 #include "src/gpu/glsl/GrGLSLFragmentShaderBuilder.h"
 #include "src/gpu/glsl/GrGLSLProgramDataManager.h"
 #include "src/gpu/glsl/GrGLSLUniformHandler.h"
-#include "src/gpu/glsl/GrGLSLXferProcessor.h"
 
 bool GrCustomXfermode::IsSupportedMode(SkBlendMode mode) {
     return (int)mode  > (int)SkBlendMode::kLastCoeffMode &&
@@ -29,27 +28,26 @@ bool GrCustomXfermode::IsSupportedMode(SkBlendMode mode) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static constexpr GrBlendEquation hw_blend_equation(SkBlendMode mode) {
-// In C++14 this could be a constexpr int variable.
-#define EQ_OFFSET (kOverlay_GrBlendEquation - (int)SkBlendMode::kOverlay)
-    static_assert(kOverlay_GrBlendEquation == (int)SkBlendMode::kOverlay + EQ_OFFSET);
-    static_assert(kDarken_GrBlendEquation == (int)SkBlendMode::kDarken + EQ_OFFSET);
-    static_assert(kLighten_GrBlendEquation == (int)SkBlendMode::kLighten + EQ_OFFSET);
-    static_assert(kColorDodge_GrBlendEquation == (int)SkBlendMode::kColorDodge + EQ_OFFSET);
-    static_assert(kColorBurn_GrBlendEquation == (int)SkBlendMode::kColorBurn + EQ_OFFSET);
-    static_assert(kHardLight_GrBlendEquation == (int)SkBlendMode::kHardLight + EQ_OFFSET);
-    static_assert(kSoftLight_GrBlendEquation == (int)SkBlendMode::kSoftLight + EQ_OFFSET);
-    static_assert(kDifference_GrBlendEquation == (int)SkBlendMode::kDifference + EQ_OFFSET);
-    static_assert(kExclusion_GrBlendEquation == (int)SkBlendMode::kExclusion + EQ_OFFSET);
-    static_assert(kMultiply_GrBlendEquation == (int)SkBlendMode::kMultiply + EQ_OFFSET);
-    static_assert(kHSLHue_GrBlendEquation == (int)SkBlendMode::kHue + EQ_OFFSET);
-    static_assert(kHSLSaturation_GrBlendEquation == (int)SkBlendMode::kSaturation + EQ_OFFSET);
-    static_assert(kHSLColor_GrBlendEquation == (int)SkBlendMode::kColor + EQ_OFFSET);
-    static_assert(kHSLLuminosity_GrBlendEquation == (int)SkBlendMode::kLuminosity + EQ_OFFSET);
+    constexpr int kEqOffset = (kOverlay_GrBlendEquation - (int)SkBlendMode::kOverlay);
+    static_assert(kOverlay_GrBlendEquation == (int)SkBlendMode::kOverlay + kEqOffset);
+    static_assert(kDarken_GrBlendEquation == (int)SkBlendMode::kDarken + kEqOffset);
+    static_assert(kLighten_GrBlendEquation == (int)SkBlendMode::kLighten + kEqOffset);
+    static_assert(kColorDodge_GrBlendEquation == (int)SkBlendMode::kColorDodge + kEqOffset);
+    static_assert(kColorBurn_GrBlendEquation == (int)SkBlendMode::kColorBurn + kEqOffset);
+    static_assert(kHardLight_GrBlendEquation == (int)SkBlendMode::kHardLight + kEqOffset);
+    static_assert(kSoftLight_GrBlendEquation == (int)SkBlendMode::kSoftLight + kEqOffset);
+    static_assert(kDifference_GrBlendEquation == (int)SkBlendMode::kDifference + kEqOffset);
+    static_assert(kExclusion_GrBlendEquation == (int)SkBlendMode::kExclusion + kEqOffset);
+    static_assert(kMultiply_GrBlendEquation == (int)SkBlendMode::kMultiply + kEqOffset);
+    static_assert(kHSLHue_GrBlendEquation == (int)SkBlendMode::kHue + kEqOffset);
+    static_assert(kHSLSaturation_GrBlendEquation == (int)SkBlendMode::kSaturation + kEqOffset);
+    static_assert(kHSLColor_GrBlendEquation == (int)SkBlendMode::kColor + kEqOffset);
+    static_assert(kHSLLuminosity_GrBlendEquation == (int)SkBlendMode::kLuminosity + kEqOffset);
 
     // There's an illegal GrBlendEquation that corresponds to no SkBlendMode, hence the extra +1.
-    static_assert(kGrBlendEquationCnt == (int)SkBlendMode::kLastMode + 1 + 1 + EQ_OFFSET);
+    static_assert(kGrBlendEquationCnt == (int)SkBlendMode::kLastMode + 1 + 1 + kEqOffset);
 
-    return static_cast<GrBlendEquation>((int)mode + EQ_OFFSET);
+    return static_cast<GrBlendEquation>((int)mode + kEqOffset);
 #undef EQ_OFFSET
 }
 
@@ -78,28 +76,22 @@ public:
         , fMode(mode)
         , fHWBlendEquation(hwBlendEquation) {}
 
-    CustomXP(bool hasMixedSamples, SkBlendMode mode, GrProcessorAnalysisCoverage coverage)
-            : INHERITED(kCustomXP_ClassID, true, hasMixedSamples, coverage)
+    CustomXP(SkBlendMode mode, GrProcessorAnalysisCoverage coverage)
+            : INHERITED(kCustomXP_ClassID, /*willReadDstColor=*/true, coverage)
             , fMode(mode)
             , fHWBlendEquation(kIllegal_GrBlendEquation) {
     }
 
     const char* name() const override { return "Custom Xfermode"; }
 
-    GrGLSLXferProcessor* createGLSLInstance() const override;
-
-    SkBlendMode mode() const { return fMode; }
-    bool hasHWBlendEquation() const { return kIllegal_GrBlendEquation != fHWBlendEquation; }
-
-    GrBlendEquation hwBlendEquation() const {
-        SkASSERT(this->hasHWBlendEquation());
-        return fHWBlendEquation;
-    }
+    std::unique_ptr<ProgramImpl> makeProgramImpl() const override;
 
     GrXferBarrierType xferBarrierType(const GrCaps&) const override;
 
 private:
-    void onGetGLSLProcessorKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const override;
+    bool hasHWBlendEquation() const { return kIllegal_GrBlendEquation != fHWBlendEquation; }
+
+    void onAddToKey(const GrShaderCaps&, GrProcessorKeyBuilder*) const override;
 
     void onGetBlendInfo(BlendInfo*) const override;
 
@@ -111,74 +103,62 @@ private:
     using INHERITED = GrXferProcessor;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-class GLCustomXP : public GrGLSLXferProcessor {
-public:
-    GLCustomXP(const GrXferProcessor&) {}
-    ~GLCustomXP() override {}
-
-    static void GenKey(const GrXferProcessor& p, const GrShaderCaps& caps,
-                       GrProcessorKeyBuilder* b) {
-        const CustomXP& xp = p.cast<CustomXP>();
-        uint32_t key = 0;
-        if (xp.hasHWBlendEquation()) {
-            SkASSERT(caps.advBlendEqInteraction() > 0);  // 0 will mean !xp.hasHWBlendEquation().
-            key |= caps.advBlendEqInteraction();
-            static_assert(GrShaderCaps::kLast_AdvBlendEqInteraction < 4);
-        }
-        if (!xp.hasHWBlendEquation()) {
-            key |= (int)xp.mode() << 3;
-        }
-        b->add32(key);
+void CustomXP::onAddToKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const {
+    uint32_t key = 0;
+    if (this->hasHWBlendEquation()) {
+        SkASSERT(caps.advBlendEqInteraction() > 0);  // 0 will mean !xp.hasHWBlendEquation().
+        key |= caps.advBlendEqInteraction();
+        static_assert(GrShaderCaps::kLast_AdvBlendEqInteraction < 4);
+    } else {
+        key |= static_cast<int>(fMode) << 3;
     }
-
-private:
-    void emitOutputsForBlendState(const EmitArgs& args) override {
-        const CustomXP& xp = args.fXP.cast<CustomXP>();
-        SkASSERT(xp.hasHWBlendEquation());
-
-        GrGLSLXPFragmentBuilder* fragBuilder = args.fXPFragBuilder;
-        fragBuilder->enableAdvancedBlendEquationIfNeeded(xp.hwBlendEquation());
-
-        // Apply coverage by multiplying it into the src color before blending. Mixed samples will
-        // "just work" automatically. (See onGetOptimizations())
-        fragBuilder->codeAppendf("%s = %s * %s;", args.fOutputPrimary, args.fInputCoverage,
-                                 args.fInputColor);
-    }
-
-    void emitBlendCodeForDstRead(GrGLSLXPFragmentBuilder* fragBuilder,
-                                 GrGLSLUniformHandler* uniformHandler,
-                                 const char* srcColor,
-                                 const char* srcCoverage,
-                                 const char* dstColor,
-                                 const char* outColor,
-                                 const char* outColorSecondary,
-                                 const GrXferProcessor& proc) override {
-        const CustomXP& xp = proc.cast<CustomXP>();
-        SkASSERT(!xp.hasHWBlendEquation());
-
-        GrGLSLBlend::AppendMode(fragBuilder, srcColor, dstColor, outColor, xp.mode());
-
-        // Apply coverage.
-        INHERITED::DefaultCoverageModulation(fragBuilder, srcCoverage, dstColor, outColor,
-                                             outColorSecondary, xp);
-    }
-
-    void onSetData(const GrGLSLProgramDataManager&, const GrXferProcessor&) override {}
-
-    using INHERITED = GrGLSLXferProcessor;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-void CustomXP::onGetGLSLProcessorKey(const GrShaderCaps& caps, GrProcessorKeyBuilder* b) const {
-    GLCustomXP::GenKey(*this, caps, b);
+    b->add32(key);
 }
 
-GrGLSLXferProcessor* CustomXP::createGLSLInstance() const {
+std::unique_ptr<GrXferProcessor::ProgramImpl> CustomXP::makeProgramImpl() const {
     SkASSERT(this->willReadDstColor() != this->hasHWBlendEquation());
-    return new GLCustomXP(*this);
+
+    class Impl : public ProgramImpl {
+    private:
+        void emitOutputsForBlendState(const EmitArgs& args) override {
+            const CustomXP& xp = args.fXP.cast<CustomXP>();
+            SkASSERT(xp.hasHWBlendEquation());
+
+            GrGLSLXPFragmentBuilder* fragBuilder = args.fXPFragBuilder;
+            fragBuilder->enableAdvancedBlendEquationIfNeeded(xp.fHWBlendEquation);
+
+            // Apply coverage by multiplying it into the src color before blending. This will "just
+            // work" automatically. (See analysisProperties())
+            fragBuilder->codeAppendf("%s = %s * %s;",
+                                     args.fOutputPrimary,
+                                     args.fInputCoverage,
+                                     args.fInputColor);
+        }
+
+        void emitBlendCodeForDstRead(GrGLSLXPFragmentBuilder* fragBuilder,
+                                     GrGLSLUniformHandler* uniformHandler,
+                                     const char* srcColor,
+                                     const char* srcCoverage,
+                                     const char* dstColor,
+                                     const char* outColor,
+                                     const char* outColorSecondary,
+                                     const GrXferProcessor& proc) override {
+            const CustomXP& xp = proc.cast<CustomXP>();
+            SkASSERT(!xp.hasHWBlendEquation());
+
+            GrGLSLBlend::AppendMode(fragBuilder, srcColor, dstColor, outColor, xp.fMode);
+
+            // Apply coverage.
+            DefaultCoverageModulation(fragBuilder,
+                                      srcCoverage,
+                                      dstColor,
+                                      outColor,
+                                      outColorSecondary,
+                                      xp);
+        }
+    };
+
+    return std::make_unique<Impl>();
 }
 
 bool CustomXP::onIsEqual(const GrXferProcessor& other) const {
@@ -195,7 +175,7 @@ GrXferBarrierType CustomXP::xferBarrierType(const GrCaps& caps) const {
 
 void CustomXP::onGetBlendInfo(BlendInfo* blendInfo) const {
     if (this->hasHWBlendEquation()) {
-        blendInfo->fEquation = this->hwBlendEquation();
+        blendInfo->fEquation = fHWBlendEquation;
     }
 }
 
@@ -218,13 +198,11 @@ public:
 private:
     sk_sp<const GrXferProcessor> makeXferProcessor(const GrProcessorAnalysisColor&,
                                                    GrProcessorAnalysisCoverage,
-                                                   bool hasMixedSamples,
                                                    const GrCaps&,
                                                    GrClampType) const override;
 
     AnalysisProperties analysisProperties(const GrProcessorAnalysisColor&,
                                           const GrProcessorAnalysisCoverage&,
-                                          bool hasMixedSamples,
                                           const GrCaps&,
                                           GrClampType) const override;
 
@@ -245,19 +223,18 @@ private:
 sk_sp<const GrXferProcessor> CustomXPFactory::makeXferProcessor(
         const GrProcessorAnalysisColor&,
         GrProcessorAnalysisCoverage coverage,
-        bool hasMixedSamples,
         const GrCaps& caps,
         GrClampType clampType) const {
     SkASSERT(GrCustomXfermode::IsSupportedMode(fMode));
     if (can_use_hw_blend_equation(fHWBlendEquation, coverage, caps)) {
         return sk_sp<GrXferProcessor>(new CustomXP(fMode, fHWBlendEquation));
     }
-    return sk_sp<GrXferProcessor>(new CustomXP(hasMixedSamples, fMode, coverage));
+    return sk_sp<GrXferProcessor>(new CustomXP(fMode, coverage));
 }
 
 GrXPFactory::AnalysisProperties CustomXPFactory::analysisProperties(
         const GrProcessorAnalysisColor&, const GrProcessorAnalysisCoverage& coverage,
-        bool hasMixedSamples, const GrCaps& caps, GrClampType clampType) const {
+        const GrCaps& caps, GrClampType clampType) const {
     /*
       The general SVG blend equation is defined in the spec as follows:
 

@@ -10,7 +10,6 @@
 
 #include "include/core/SkBlendMode.h"
 #include "include/core/SkColor.h"
-#include "include/core/SkFilterQuality.h"
 #include "include/core/SkFlattenable.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMatrix.h"
@@ -18,6 +17,7 @@
 
 class SkArenaAlloc;
 class SkBitmap;
+class SkBlender;
 class SkColorFilter;
 class SkColorSpace;
 class SkImage;
@@ -139,7 +139,7 @@ public:
     static sk_sp<SkShader> Color(SkColor);
     static sk_sp<SkShader> Color(const SkColor4f&, sk_sp<SkColorSpace>);
     static sk_sp<SkShader> Blend(SkBlendMode mode, sk_sp<SkShader> dst, sk_sp<SkShader> src);
-    static sk_sp<SkShader> Lerp(float t, sk_sp<SkShader> dst, sk_sp<SkShader> src);
+    static sk_sp<SkShader> Blend(sk_sp<SkBlender>, sk_sp<SkShader> dst, sk_sp<SkShader> src);
 
 private:
     SkShaders() = delete;

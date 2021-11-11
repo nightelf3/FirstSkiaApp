@@ -25,12 +25,11 @@ class GrVkPipelineStateBuilder : public GrGLSLProgramBuilder {
 public:
     /** Generates a pipeline state.
      *
-     * The GrVkPipelineState implements what is specified in the GrPipeline and GrPrimitiveProcessor
-     * as input. After successful generation, the builder result objects are available to be used.
+     * The return GrVkPipelineState implements the supplied GrProgramInfo.
+     *
      * @return the created pipeline if generation was successful; nullptr otherwise
      */
     static GrVkPipelineState* CreatePipelineState(GrVkGpu*,
-                                                  GrRenderTarget*,
                                                   const GrProgramDesc&,
                                                   const GrProgramInfo&,
                                                   VkRenderPass compatibleRenderPass,
@@ -46,7 +45,7 @@ public:
     void finalizeFragmentSecondaryColor(GrShaderVar& outputColor) override;
 
 private:
-    GrVkPipelineStateBuilder(GrVkGpu*, GrRenderTarget*, const GrProgramDesc&, const GrProgramInfo&);
+    GrVkPipelineStateBuilder(GrVkGpu*, const GrProgramDesc&, const GrProgramInfo&);
 
     GrVkPipelineState* finalize(const GrProgramDesc&, VkRenderPass compatibleRenderPass,
                                 bool overrideSupbassForResolveLoad);

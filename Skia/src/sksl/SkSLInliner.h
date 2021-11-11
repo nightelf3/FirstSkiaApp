@@ -39,7 +39,7 @@ class Inliner {
 public:
     Inliner(const Context* context) : fContext(context) {}
 
-    void reset(ModifiersPool* modifiers);
+    void reset();
 
     /** Inlines any eligible functions that are found. Returns true if any changes are made. */
     bool analyze(const std::vector<std::unique_ptr<ProgramElement>>& elements,
@@ -61,17 +61,24 @@ private:
                             std::shared_ptr<SymbolTable> symbols, ProgramUsage* usage,
                             InlineCandidateList* candidateList);
 
-    std::unique_ptr<Expression> inlineExpression(int offset,
+    std::unique_ptr<Expression> inlineExpression(int line,
                                                  VariableRewriteMap* varMap,
                                                  SymbolTable* symbolTableForExpression,
                                                  const Expression& expression);
-    std::unique_ptr<Statement> inlineStatement(int offset,
+    std::unique_ptr<Statement> inlineStatement(int line,
                                                VariableRewriteMap* varMap,
                                                SymbolTable* symbolTableForStatement,
                                                std::unique_ptr<Expression>* resultExpr,
                                                ReturnComplexity returnComplexity,
                                                const Statement& statement,
                                                bool isBuiltinCode);
+
+    /**
+     * Searches the rewrite map for an rewritten Variable* for the passed-in one. Asserts if the
+     * rewrite map doesn't contain the variable, or contains a different type of expression.
+     */
+    static const Variable* RemapVariable(const Variable* variable,
+                                         const VariableRewriteMap* varMap);
 
     /** Determines if a given function has multiple and/or early returns. */
     static ReturnComplexity GetReturnComplexity(const FunctionDefinition& funcDef);
@@ -93,19 +100,8 @@ private:
     };
     InlinedCall inlineCall(FunctionCall*,
                            std::shared_ptr<SymbolTable>,
+                           const ProgramUsage&,
                            const FunctionDeclaration* caller);
-
-    /** Creates a scratch variable for the inliner to use. */
-    struct InlineVariable {
-        const Variable*             fVarSymbol;
-        std::unique_ptr<Statement>  fVarDecl;
-    };
-    InlineVariable makeInlineVariable(const String& baseName,
-                                      const Type* type,
-                                      SymbolTable* symbolTable,
-                                      Modifiers modifiers,
-                                      bool isBuiltinCode,
-                                      std::unique_ptr<Expression>* initialValue);
 
     /** Adds a scope to inlined bodies returned by `inlineCall`, if one is required. */
     void ensureScopedBlocks(Statement* inlinedBody, Statement* parentStmt);
@@ -114,8 +110,6 @@ private:
     bool isSafeToInline(const FunctionDefinition* functionDef);
 
     const Context* fContext = nullptr;
-    ModifiersPool* fModifiers = nullptr;
-    Mangler fMangler;
     int fInlinedStatementCounter = 0;
 };
 

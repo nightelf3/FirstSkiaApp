@@ -8,6 +8,7 @@
 #include "src/gpu/vk/GrVkUtil.h"
 
 #include "include/gpu/GrDirectContext.h"
+#include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrDataUtils.h"
 #include "src/gpu/GrDirectContextPriv.h"
 #include "src/gpu/vk/GrVkGpu.h"
@@ -78,9 +79,6 @@ SkSL::ProgramKind vk_shader_stage_to_skiasl_kind(VkShaderStageFlagBits stage) {
     if (VK_SHADER_STAGE_VERTEX_BIT == stage) {
         return SkSL::ProgramKind::kVertex;
     }
-    if (VK_SHADER_STAGE_GEOMETRY_BIT == stage) {
-        return SkSL::ProgramKind::kGeometry;
-    }
     SkASSERT(VK_SHADER_STAGE_FRAGMENT_BIT == stage);
     return SkSL::ProgramKind::kFragment;
 }
@@ -93,6 +91,7 @@ bool GrCompileVkShaderModule(GrVkGpu* gpu,
                              const SkSL::Program::Settings& settings,
                              SkSL::String* outSPIRV,
                              SkSL::Program::Inputs* outInputs) {
+    TRACE_EVENT0("skia.shaders", "CompileVkShaderModule");
     auto errorHandler = gpu->getContext()->priv().getShaderErrorHandler();
     std::unique_ptr<SkSL::Program> program = gpu->shaderCompiler()->convertProgram(
             vk_shader_stage_to_skiasl_kind(stage), shaderString, settings);
@@ -116,6 +115,7 @@ bool GrInstallVkShaderModule(GrVkGpu* gpu,
                              VkShaderStageFlagBits stage,
                              VkShaderModule* shaderModule,
                              VkPipelineShaderStageCreateInfo* stageInfo) {
+    TRACE_EVENT0("skia.shaders", "InstallVkShaderModule");
     VkShaderModuleCreateInfo moduleCreateInfo;
     memset(&moduleCreateInfo, 0, sizeof(VkShaderModuleCreateInfo));
     moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

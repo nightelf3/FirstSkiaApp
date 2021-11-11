@@ -8,58 +8,58 @@
 #include "src/gpu/d3d/GrD3DPipelineState.h"
 
 #include "include/private/SkTemplates.h"
+#include "src/gpu/GrFragmentProcessor.h"
+#include "src/gpu/GrGeometryProcessor.h"
 #include "src/gpu/GrProgramInfo.h"
 #include "src/gpu/GrStencilSettings.h"
+#include "src/gpu/GrXferProcessor.h"
 #include "src/gpu/d3d/GrD3DBuffer.h"
 #include "src/gpu/d3d/GrD3DGpu.h"
+#include "src/gpu/d3d/GrD3DPipeline.h"
 #include "src/gpu/d3d/GrD3DRootSignature.h"
 #include "src/gpu/d3d/GrD3DTexture.h"
-#include "src/gpu/glsl/GrGLSLFragmentProcessor.h"
-#include "src/gpu/glsl/GrGLSLGeometryProcessor.h"
-#include "src/gpu/glsl/GrGLSLXferProcessor.h"
+#include "src/gpu/effects/GrTextureEffect.h"
 
 GrD3DPipelineState::GrD3DPipelineState(
-        gr_cp<ID3D12PipelineState> pipelineState,
+        sk_sp<GrD3DPipeline> pipeline,
         sk_sp<GrD3DRootSignature> rootSignature,
         const GrGLSLBuiltinUniformHandles& builtinUniformHandles,
-        const UniformInfoArray& uniforms, uint32_t uniformSize,
+        const UniformInfoArray& uniforms,
+        uint32_t uniformSize,
         uint32_t numSamplers,
-        std::unique_ptr<GrGLSLPrimitiveProcessor> geometryProcessor,
-        std::unique_ptr<GrGLSLXferProcessor> xferProcessor,
-        std::vector<std::unique_ptr<GrGLSLFragmentProcessor>> fpImpls,
+        std::unique_ptr<GrGeometryProcessor::ProgramImpl> gpImpl,
+        std::unique_ptr<GrXferProcessor::ProgramImpl> xpImpl,
+        std::vector<std::unique_ptr<GrFragmentProcessor::ProgramImpl>> fpImpls,
         size_t vertexStride,
         size_t instanceStride)
-    : fPipelineState(std::move(pipelineState))
-    , fRootSignature(std::move(rootSignature))
-    , fBuiltinUniformHandles(builtinUniformHandles)
-    , fGeometryProcessor(std::move(geometryProcessor))
-    , fXferProcessor(std::move(xferProcessor))
-    , fFPImpls(std::move(fpImpls))
-    , fDataManager(uniforms, uniformSize)
-    , fNumSamplers(numSamplers)
-    , fVertexStride(vertexStride)
-    , fInstanceStride(instanceStride) {}
+        : fPipeline(std::move(pipeline))
+        , fRootSignature(std::move(rootSignature))
+        , fBuiltinUniformHandles(builtinUniformHandles)
+        , fGPImpl(std::move(gpImpl))
+        , fXPImpl(std::move(xpImpl))
+        , fFPImpls(std::move(fpImpls))
+        , fDataManager(uniforms, uniformSize)
+        , fNumSamplers(numSamplers)
+        , fVertexStride(vertexStride)
+        , fInstanceStride(instanceStride) {}
 
 void GrD3DPipelineState::setAndBindConstants(GrD3DGpu* gpu,
                                              const GrRenderTarget* renderTarget,
                                              const GrProgramInfo& programInfo) {
     this->setRenderTargetState(renderTarget, programInfo.origin());
 
-    fGeometryProcessor->setData(fDataManager, programInfo.primProc());
+    fGPImpl->setData(fDataManager, *gpu->caps()->shaderCaps(), programInfo.geomProc());
+
     for (int i = 0; i < programInfo.pipeline().numFragmentProcessors(); ++i) {
-        auto& fp = programInfo.pipeline().getFragmentProcessor(i);
-        for (auto [fp, impl] : GrGLSLFragmentProcessor::ParallelRange(fp, *fFPImpls[i])) {
+        const auto& fp = programInfo.pipeline().getFragmentProcessor(i);
+        fp.visitWithImpls([&](const GrFragmentProcessor& fp,
+                              GrFragmentProcessor::ProgramImpl& impl) {
             impl.setData(fDataManager, fp);
-        }
+        }, *fFPImpls[i]);
     }
 
-    {
-        SkIPoint offset;
-        GrTexture* dstTexture = programInfo.pipeline().peekDstTexture(&offset);
-
-        fXferProcessor->setData(fDataManager, programInfo.pipeline().getXferProcessor(),
-                                dstTexture, offset);
-    }
+    programInfo.pipeline().setDstTextureUniforms(fDataManager, &fBuiltinUniformHandles);
+    fXPImpl->setData(fDataManager, programInfo.pipeline().getXferProcessor());
 
     D3D12_GPU_VIRTUAL_ADDRESS constantsAddress = fDataManager.uploadConstants(gpu);
     gpu->currentCommandList()->setGraphicsRootConstantBufferView(
@@ -68,13 +68,7 @@ void GrD3DPipelineState::setAndBindConstants(GrD3DGpu* gpu,
 }
 
 void GrD3DPipelineState::setRenderTargetState(const GrRenderTarget* rt, GrSurfaceOrigin origin) {
-    // Load the RT height uniform if it is needed to y-flip gl_FragCoord.
-    if (fBuiltinUniformHandles.fRTHeightUni.isValid() &&
-        fRenderTargetState.fRenderTargetSize.fHeight != rt->height()) {
-        fDataManager.set1f(fBuiltinUniformHandles.fRTHeightUni, SkIntToScalar(rt->height()));
-    }
-
-    // set RT adjustment
+    // Set RT adjustment and RT flip
     SkISize dimensions = rt->dimensions();
     SkASSERT(fBuiltinUniformHandles.fRTAdjustmentUni.isValid());
     if (fRenderTargetState.fRenderTargetOrigin != origin ||
@@ -82,28 +76,45 @@ void GrD3DPipelineState::setRenderTargetState(const GrRenderTarget* rt, GrSurfac
         fRenderTargetState.fRenderTargetSize = dimensions;
         fRenderTargetState.fRenderTargetOrigin = origin;
 
-        float rtAdjustmentVec[4];
-        fRenderTargetState.getRTAdjustmentVec(rtAdjustmentVec);
-        fDataManager.set4fv(fBuiltinUniformHandles.fRTAdjustmentUni, 1, rtAdjustmentVec);
+        // The client will mark a swap buffer as kTopLeft when making a SkSurface because
+        // D3D's framebuffer space has (0, 0) at the top left. This agrees with Skia's device
+        // coords. However, in NDC (-1, -1) is the bottom left. So we flip when origin is kTopLeft.
+        bool flip = (origin == kTopLeft_GrSurfaceOrigin);
+        std::array<float, 4> v = SkSL::Compiler::GetRTAdjustVector(dimensions, flip);
+        fDataManager.set4fv(fBuiltinUniformHandles.fRTAdjustmentUni, 1, v.data());
+        if (fBuiltinUniformHandles.fRTFlipUni.isValid()) {
+            // Note above that framebuffer space has origin top left. So we need !flip here.
+            std::array<float, 2> d = SkSL::Compiler::GetRTFlipVector(rt->height(), !flip);
+            fDataManager.set2fv(fBuiltinUniformHandles.fRTFlipUni, 1, d.data());
+        }
     }
 }
 
-void GrD3DPipelineState::setAndBindTextures(GrD3DGpu* gpu, const GrPrimitiveProcessor& primProc,
-                                            const GrSurfaceProxy* const primProcTextures[],
+void GrD3DPipelineState::setAndBindTextures(GrD3DGpu* gpu,
+                                            const GrGeometryProcessor& geomProc,
+                                            const GrSurfaceProxy* const geomProcTextures[],
                                             const GrPipeline& pipeline) {
-    SkASSERT(primProcTextures || !primProc.numTextureSamplers());
+    SkASSERT(geomProcTextures || !geomProc.numTextureSamplers());
 
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> shaderResourceViews(fNumSamplers);
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> samplers(fNumSamplers);
     unsigned int currTextureBinding = 0;
 
-    for (int i = 0; i < primProc.numTextureSamplers(); ++i) {
-        SkASSERT(primProcTextures[i]->asTextureProxy());
-        const auto& sampler = primProc.textureSampler(i);
-        auto texture = static_cast<GrD3DTexture*>(primProcTextures[i]->peekTexture());
+    for (int i = 0; i < geomProc.numTextureSamplers(); ++i) {
+        SkASSERT(geomProcTextures[i]->asTextureProxy());
+        const auto& sampler = geomProc.textureSampler(i);
+        auto texture = static_cast<GrD3DTexture*>(geomProcTextures[i]->peekTexture());
         shaderResourceViews[currTextureBinding] = texture->shaderResourceView();
         samplers[currTextureBinding++] =
                 gpu->resourceProvider().findOrCreateCompatibleSampler(sampler.samplerState());
+        gpu->currentCommandList()->addSampledTextureRef(texture);
+    }
+
+    if (GrTexture* dstTexture = pipeline.peekDstTexture()) {
+        auto texture = static_cast<GrD3DTexture*>(dstTexture);
+        shaderResourceViews[currTextureBinding] = texture->shaderResourceView();
+        samplers[currTextureBinding++] = gpu->resourceProvider().findOrCreateCompatibleSampler(
+                                               GrSamplerState::Filter::kNearest);
         gpu->currentCommandList()->addSampledTextureRef(texture);
     }
 
@@ -116,30 +127,25 @@ void GrD3DPipelineState::setAndBindTextures(GrD3DGpu* gpu, const GrPrimitiveProc
         gpu->currentCommandList()->addSampledTextureRef(texture);
     });
 
-    if (GrTexture* dstTexture = pipeline.peekDstTexture()) {
-        auto texture = static_cast<GrD3DTexture*>(dstTexture);
-        shaderResourceViews[currTextureBinding] = texture->shaderResourceView();
-        samplers[currTextureBinding++] = gpu->resourceProvider().findOrCreateCompatibleSampler(
-                                               GrSamplerState::Filter::kNearest);
-        gpu->currentCommandList()->addSampledTextureRef(texture);
-    }
-
     SkASSERT(fNumSamplers == currTextureBinding);
 
     // fill in descriptor tables and bind to root signature
     if (fNumSamplers > 0) {
-        // set up and bind shader resource view table
+        // set up descriptor tables and bind heaps
         sk_sp<GrD3DDescriptorTable> srvTable =
-                gpu->resourceProvider().findOrCreateShaderResourceTable(shaderResourceViews);
+                gpu->resourceProvider().findOrCreateShaderViewTable(shaderResourceViews);
+        sk_sp<GrD3DDescriptorTable> samplerTable =
+            gpu->resourceProvider().findOrCreateSamplerTable(samplers);
+        gpu->currentCommandList()->setDescriptorHeaps(srvTable->heap(), samplerTable->heap());
+
+        // bind shader resource view table
         gpu->currentCommandList()->setGraphicsRootDescriptorTable(
-                static_cast<unsigned int>(GrD3DRootSignature::ParamIndex::kTextureDescriptorTable),
+                (unsigned int)GrD3DRootSignature::ParamIndex::kShaderViewDescriptorTable,
                 srvTable->baseGpuDescriptor());
 
-        // set up and bind sampler table
-        sk_sp<GrD3DDescriptorTable> samplerTable =
-                gpu->resourceProvider().findOrCreateSamplerTable(samplers);
+        // bind sampler table
         gpu->currentCommandList()->setGraphicsRootDescriptorTable(
-                static_cast<unsigned int>(GrD3DRootSignature::ParamIndex::kSamplerDescriptorTable),
+                (unsigned int)GrD3DRootSignature::ParamIndex::kSamplerDescriptorTable,
                 samplerTable->baseGpuDescriptor());
     }
 }

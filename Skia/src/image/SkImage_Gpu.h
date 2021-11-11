@@ -23,18 +23,10 @@ class SkBitmap;
 
 class SkImage_Gpu final : public SkImage_GpuBase {
 public:
-    SkImage_Gpu(sk_sp<GrImageContext>, uint32_t uniqueID, GrSurfaceProxyView, SkColorType,
-                SkAlphaType, sk_sp<SkColorSpace>);
     SkImage_Gpu(sk_sp<GrImageContext> context,
                 uint32_t uniqueID,
                 GrSurfaceProxyView view,
-                SkColorInfo info)
-            : SkImage_Gpu(std::move(context),
-                          uniqueID,
-                          std::move(view),
-                          info.colorType(),
-                          info.alphaType(),
-                          info.refColorSpace()) {}
+                SkColorInfo info);
 
     static sk_sp<SkImage> MakeWithVolatileSrc(sk_sp<GrRecordingContext> rContext,
                                               GrSurfaceProxyView volatileSrc,
@@ -49,7 +41,7 @@ public:
 
     bool onHasMipmaps() const override;
 
-    GrSemaphoresSubmitted onFlush(GrDirectContext*, const GrFlushInfo&) override;
+    GrSemaphoresSubmitted onFlush(GrDirectContext*, const GrFlushInfo&) const override;
 
     GrBackendTexture onGetBackendTexture(bool flushPendingGrContextIO,
                                          GrSurfaceOrigin* origin) const final;
@@ -68,7 +60,7 @@ public:
                                      RescaleGamma,
                                      RescaleMode,
                                      ReadPixelsCallback,
-                                     ReadPixelsContext) override;
+                                     ReadPixelsContext) const override;
 
     void onAsyncRescaleAndReadPixelsYUV420(SkYUVColorSpace,
                                            sk_sp<SkColorSpace>,
@@ -77,7 +69,7 @@ public:
                                            RescaleGamma,
                                            RescaleMode,
                                            ReadPixelsCallback,
-                                           ReadPixelsContext) override;
+                                           ReadPixelsContext) const override;
 
     void generatingSurfaceIsDeleted() override;
 
@@ -92,6 +84,13 @@ private:
     std::tuple<GrSurfaceProxyView, GrColorType> onAsView(GrRecordingContext*,
                                                          GrMipmapped,
                                                          GrImageTexGenPolicy) const override;
+
+    std::unique_ptr<GrFragmentProcessor> onAsFragmentProcessor(GrRecordingContext*,
+                                                               SkSamplingOptions,
+                                                               const SkTileMode[],
+                                                               const SkMatrix&,
+                                                               const SkRect*,
+                                                               const SkRect*) const override;
 
     GrSurfaceProxyView makeView(GrRecordingContext*) const;
 

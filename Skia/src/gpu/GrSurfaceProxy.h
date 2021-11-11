@@ -17,12 +17,10 @@
 
 class GrCaps;
 class GrContext_Base;
-class GrOpsTask;
 class GrRecordingContext;
 class GrRenderTargetProxy;
 class GrRenderTask;
 class GrResourceProvider;
-class GrSurfaceContext;
 class GrSurfaceProxyPriv;
 class GrSurfaceProxyView;
 class GrTextureProxy;
@@ -72,6 +70,7 @@ public:
         GrMipmapped fMipmapped;
         int fSampleCnt;
         const GrBackendFormat& fFormat;
+        GrTextureType fTextureType;
         GrProtected fProtected;
         SkBudgeted fBudgeted;
     };
@@ -145,6 +144,10 @@ public:
      */
     SkRect backingStoreBoundsRect() const {
         return SkRect::Make(this->backingStoreDimensions());
+    }
+
+    SkIRect backingStoreBoundsIRect() const {
+        return SkIRect::MakeSize(this->backingStoreDimensions());
     }
 
     const GrBackendFormat& backendFormat() const { return fFormat; }
@@ -226,6 +229,13 @@ public:
      */
     virtual GrRenderTargetProxy* asRenderTargetProxy() { return nullptr; }
     virtual const GrRenderTargetProxy* asRenderTargetProxy() const { return nullptr; }
+
+    /** @return The unique key for this proxy. May be invalid. */
+    virtual const GrUniqueKey& getUniqueKey() const {
+        // Base class never has a valid unique key.
+        static const GrUniqueKey kInvalidKey;
+        return kInvalidKey;
+    }
 
     bool isInstantiated() const { return SkToBool(fTarget); }
 
@@ -415,7 +425,7 @@ protected:
     GrInternalSurfaceFlags fSurfaceFlags;
 
 private:
-    // For wrapped resources, 'fFormat', 'fWidth', and 'fHeight'; will always be filled in from the
+    // For wrapped resources, 'fFormat' and 'fDimensions' will always be filled in from the
     // wrapped resource.
     const GrBackendFormat  fFormat;
     SkISize                fDimensions;

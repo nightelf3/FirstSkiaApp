@@ -7,12 +7,13 @@
 
 #include "src/gpu/d3d/GrD3DCommandList.h"
 
+#include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrScissorState.h"
 #include "src/gpu/d3d/GrD3DAttachment.h"
 #include "src/gpu/d3d/GrD3DBuffer.h"
 #include "src/gpu/d3d/GrD3DCommandSignature.h"
 #include "src/gpu/d3d/GrD3DGpu.h"
-#include "src/gpu/d3d/GrD3DPipelineState.h"
+#include "src/gpu/d3d/GrD3DPipeline.h"
 #include "src/gpu/d3d/GrD3DRenderTarget.h"
 #include "src/gpu/d3d/GrD3DTexture.h"
 #include "src/gpu/d3d/GrD3DTextureResource.h"
@@ -67,11 +68,7 @@ void GrD3DCommandList::releaseResources() {
         return;
     }
     SkASSERT(!fIsActive);
-    for (int i = 0; i < fTrackedResources.count(); ++i) {
-        fTrackedResources[i]->notifyFinishedWithWorkOnGpu();
-    }
     for (int i = 0; i < fTrackedRecycledResources.count(); ++i) {
-        fTrackedRecycledResources[i]->notifyFinishedWithWorkOnGpu();
         auto resource = fTrackedRecycledResources[i].release();
         resource->recycle();
     }
@@ -108,6 +105,45 @@ void GrD3DCommandList::resourceBarrier(sk_sp<GrManagedResource> resource,
     if (resource) {
         this->addResource(std::move(resource));
     }
+}
+
+void GrD3DCommandList::uavBarrier(sk_sp<GrManagedResource> resource,
+                                  ID3D12Resource* uavResource) {
+    SkASSERT(fIsActive);
+    // D3D will apply barriers in order so we can just add onto the end
+    D3D12_RESOURCE_BARRIER& newBarrier = fResourceBarriers.push_back();
+    newBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    newBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    newBarrier.UAV.pResource = uavResource;
+
+    fHasWork = true;
+    if (resource) {
+        this->addResource(std::move(resource));
+    }
+}
+
+void GrD3DCommandList::aliasingBarrier(sk_sp<GrManagedResource> beforeManagedResource,
+                                       ID3D12Resource* beforeResource,
+                                       sk_sp<GrManagedResource> afterManagedResource,
+                                       ID3D12Resource* afterResource) {
+    SkASSERT(fIsActive);
+    // D3D will apply barriers in order so we can just add onto the end
+    D3D12_RESOURCE_BARRIER& newBarrier = fResourceBarriers.push_back();
+    newBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+    newBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    newBarrier.Aliasing.pResourceBefore = beforeResource;
+    newBarrier.Aliasing.pResourceAfter = afterResource;
+
+    fHasWork = true;
+    if (beforeResource) {
+        SkASSERT(beforeManagedResource);
+        this->addResource(std::move(beforeManagedResource));
+    }
+    // Aliasing barriers can accept a null pointer for the second resource,
+    // but at this point we're not using that feature.
+    SkASSERT(afterResource);
+    SkASSERT(afterManagedResource);
+    this->addResource(std::move(afterManagedResource));
 }
 
 void GrD3DCommandList::submitResourceBarriers() {
@@ -175,6 +211,38 @@ void GrD3DCommandList::copyTextureRegionToBuffer(sk_sp<const GrBuffer> dst,
     fCommandList->CopyTextureRegion(dstLocation, dstX, dstY, 0, srcLocation, srcBox);
 }
 
+
+void GrD3DCommandList::copyTextureToTexture(const GrD3DTexture* dst, const GrD3DTexture* src,
+                                            UINT subresourceIndex) {
+    SkASSERT(fIsActive);
+    SkASSERT(src);
+    SkASSERT(dst);
+    SkASSERT(src->width() == dst->width() && src->height() == dst->height());
+
+    this->addingWork();
+    ID3D12Resource* dstTexture = dst->d3dResource();
+    ID3D12Resource* srcTexture = src->d3dResource();
+    if (subresourceIndex == (UINT)-1) {
+        fCommandList->CopyResource(dstTexture, srcTexture);
+    } else {
+        SkASSERT(subresourceIndex < src->mipLevels() &&
+                 subresourceIndex < dst->mipLevels());
+        D3D12_TEXTURE_COPY_LOCATION srcLoc = {};
+        srcLoc.pResource = srcTexture;
+        srcLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        srcLoc.SubresourceIndex = subresourceIndex;
+
+        D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
+        dstLoc.pResource = dstTexture;
+        dstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dstLoc.SubresourceIndex = subresourceIndex;
+
+        fCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+    }
+    this->addResource(dst->resource());
+    this->addResource(src->resource());
+}
+
 void GrD3DCommandList::copyBufferToBuffer(sk_sp<GrD3DBuffer> dst, uint64_t dstOffset,
                                           ID3D12Resource* srcBuffer, uint64_t srcOffset,
                                           uint64_t numBytes) {
@@ -199,7 +267,8 @@ void GrD3DCommandList::addingWork() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<GrD3DDirectCommandList> GrD3DDirectCommandList::Make(ID3D12Device* device) {
+std::unique_ptr<GrD3DDirectCommandList> GrD3DDirectCommandList::Make(GrD3DGpu* gpu) {
+    ID3D12Device* device = gpu->device();
     gr_cp<ID3D12CommandAllocator> allocator;
     GR_D3D_CALL_ERRCHECK(device->CreateCommandAllocator(
                          D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)));
@@ -209,47 +278,43 @@ std::unique_ptr<GrD3DDirectCommandList> GrD3DDirectCommandList::Make(ID3D12Devic
                                                    allocator.get(), nullptr,
                                                    IID_PPV_ARGS(&commandList)));
 
-    auto grCL = new GrD3DDirectCommandList(std::move(allocator), std::move(commandList));
+    auto grCL = new GrD3DDirectCommandList(std::move(allocator), std::move(commandList),
+                                           gpu->d3dCaps().resolveSubresourceRegionSupport());
     return std::unique_ptr<GrD3DDirectCommandList>(grCL);
 }
 
 GrD3DDirectCommandList::GrD3DDirectCommandList(gr_cp<ID3D12CommandAllocator> allocator,
-                                               gr_cp<ID3D12GraphicsCommandList> commandList)
+                                               gr_cp<ID3D12GraphicsCommandList> commandList,
+                                               bool resolveSubregionSupported)
     : GrD3DCommandList(std::move(allocator), std::move(commandList))
-    , fCurrentPipelineState(nullptr)
-    , fCurrentRootSignature(nullptr)
-    , fCurrentVertexBuffer(nullptr)
-    , fCurrentVertexStride(0)
-    , fCurrentInstanceBuffer(nullptr)
-    , fCurrentInstanceStride(0)
-    , fCurrentIndexBuffer(nullptr)
-    , fCurrentConstantBufferAddress(0)
-    , fCurrentSRVCRVDescriptorHeap(nullptr)
-    , fCurrentSamplerDescriptorHeap(nullptr) {
-    sk_bzero(fCurrentRootDescriptorTable, sizeof(fCurrentRootDescriptorTable));
+    , fResolveSubregionSupported(resolveSubregionSupported) {
+    sk_bzero(fCurrentGraphicsRootDescTable, sizeof(fCurrentGraphicsRootDescTable));
+    sk_bzero(fCurrentComputeRootDescTable, sizeof(fCurrentComputeRootDescTable));
 }
 
 void GrD3DDirectCommandList::onReset() {
-    fCurrentPipelineState = nullptr;
-    fCurrentRootSignature = nullptr;
+    fCurrentPipeline = nullptr;
+    fCurrentGraphicsRootSignature = nullptr;
+    fCurrentComputeRootSignature = nullptr;
     fCurrentVertexBuffer = nullptr;
     fCurrentVertexStride = 0;
     fCurrentInstanceBuffer = nullptr;
     fCurrentInstanceStride = 0;
     fCurrentIndexBuffer = nullptr;
-    fCurrentConstantBufferAddress = 0;
-    sk_bzero(fCurrentRootDescriptorTable, sizeof(fCurrentRootDescriptorTable));
+    fCurrentGraphicsConstantBufferAddress = 0;
+    fCurrentComputeConstantBufferAddress = 0;
+    sk_bzero(fCurrentGraphicsRootDescTable, sizeof(fCurrentGraphicsRootDescTable));
+    sk_bzero(fCurrentComputeRootDescTable, sizeof(fCurrentComputeRootDescTable));
     fCurrentSRVCRVDescriptorHeap = nullptr;
     fCurrentSamplerDescriptorHeap = nullptr;
 }
 
-void GrD3DDirectCommandList::setPipelineState(sk_sp<GrD3DPipelineState> pipelineState) {
+void GrD3DDirectCommandList::setPipelineState(const sk_sp<GrD3DPipeline>& pipeline) {
     SkASSERT(fIsActive);
-    if (pipelineState.get() != fCurrentPipelineState) {
-        fCommandList->SetPipelineState(pipelineState->pipelineState());
-        this->addResource(std::move(pipelineState));
-        fCurrentPipelineState = pipelineState.get();
-        this->setDefaultSamplePositions();
+    if (pipeline.get() != fCurrentPipeline) {
+        fCommandList->SetPipelineState(pipeline->d3dPipelineState());
+        this->addResource(std::move(pipeline));
+        fCurrentPipeline = pipeline.get();
     }
 }
 
@@ -279,33 +344,25 @@ void GrD3DDirectCommandList::setViewports(unsigned int numViewports,
     fCommandList->RSSetViewports(numViewports, viewports);
 }
 
-void GrD3DDirectCommandList::setCenteredSamplePositions(unsigned int numSamples) {
-    if (!fUsingCenteredSamples && numSamples > 1) {
-        gr_cp<ID3D12GraphicsCommandList1> commandList1;
-        GR_D3D_CALL_ERRCHECK(fCommandList->QueryInterface(IID_PPV_ARGS(&commandList1)));
-        static D3D12_SAMPLE_POSITION kCenteredSampleLocations[16] = {};
-        commandList1->SetSamplePositions(numSamples, 1, kCenteredSampleLocations);
-        fUsingCenteredSamples = true;
-    }
-}
-
-void GrD3DDirectCommandList::setDefaultSamplePositions() {
-    if (fUsingCenteredSamples) {
-        gr_cp<ID3D12GraphicsCommandList1> commandList1;
-        GR_D3D_CALL_ERRCHECK(fCommandList->QueryInterface(IID_PPV_ARGS(&commandList1)));
-        commandList1->SetSamplePositions(0, 0, nullptr);
-        fUsingCenteredSamples = false;
-    }
-}
-
 void GrD3DDirectCommandList::setGraphicsRootSignature(const sk_sp<GrD3DRootSignature>& rootSig) {
     SkASSERT(fIsActive);
-    if (fCurrentRootSignature != rootSig.get()) {
+    if (fCurrentGraphicsRootSignature != rootSig.get()) {
         fCommandList->SetGraphicsRootSignature(rootSig->rootSignature());
         this->addResource(rootSig);
-        fCurrentRootSignature = rootSig.get();
+        fCurrentGraphicsRootSignature = rootSig.get();
         // need to reset the current descriptor tables as well
-        sk_bzero(fCurrentRootDescriptorTable, sizeof(fCurrentRootDescriptorTable));
+        sk_bzero(fCurrentGraphicsRootDescTable, sizeof(fCurrentGraphicsRootDescTable));
+    }
+}
+
+void GrD3DDirectCommandList::setComputeRootSignature(const sk_sp<GrD3DRootSignature>& rootSig) {
+    SkASSERT(fIsActive);
+    if (fCurrentComputeRootSignature != rootSig.get()) {
+        fCommandList->SetComputeRootSignature(rootSig->rootSignature());
+        this->addResource(rootSig);
+        fCurrentComputeRootSignature = rootSig.get();
+        // need to reset the current descriptor tables as well
+        sk_bzero(fCurrentComputeRootDescTable, sizeof(fCurrentComputeRootDescTable));
     }
 }
 
@@ -390,6 +447,15 @@ void GrD3DDirectCommandList::executeIndirect(const sk_sp<GrD3DCommandSignature> 
     this->addGrBuffer(sk_ref_sp<const GrBuffer>(argumentBuffer));
 }
 
+
+void GrD3DDirectCommandList::dispatch(unsigned int threadGroupCountX,
+                                      unsigned int threadGroupCountY,
+                                      unsigned int threadGroupCountZ) {
+    SkASSERT(fIsActive);
+    this->addingWork();
+    fCommandList->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
 void GrD3DDirectCommandList::clearRenderTargetView(const GrD3DRenderTarget* renderTarget,
                                                    std::array<float, 4> color,
                                                    const D3D12_RECT* rect) {
@@ -446,26 +512,39 @@ void GrD3DDirectCommandList::resolveSubresourceRegion(const GrD3DTextureResource
     this->addResource(dstTexture->resource());
     this->addResource(srcTexture->resource());
 
-    gr_cp<ID3D12GraphicsCommandList1> commandList1;
-    HRESULT result = fCommandList->QueryInterface(IID_PPV_ARGS(&commandList1));
-    if (SUCCEEDED(result)) {
-        commandList1->ResolveSubresourceRegion(dstTexture->d3dResource(), 0, dstX, dstY,
-                                               srcTexture->d3dResource(), 0, srcRect,
-                                               srcTexture->dxgiFormat(),
-                                               D3D12_RESOLVE_MODE_AVERAGE);
-    } else {
-        fCommandList->ResolveSubresource(dstTexture->d3dResource(), 0, srcTexture->d3dResource(), 0,
-                                         srcTexture->dxgiFormat());
+    if (fResolveSubregionSupported) {
+        gr_cp<ID3D12GraphicsCommandList1> commandList1;
+        HRESULT result = fCommandList->QueryInterface(IID_PPV_ARGS(&commandList1));
+        if (SUCCEEDED(result)) {
+            commandList1->ResolveSubresourceRegion(dstTexture->d3dResource(), 0, dstX, dstY,
+                                                   srcTexture->d3dResource(), 0, srcRect,
+                                                   srcTexture->dxgiFormat(),
+                                                   D3D12_RESOLVE_MODE_AVERAGE);
+            return;
+        }
     }
+
+    fCommandList->ResolveSubresource(dstTexture->d3dResource(), 0, srcTexture->d3dResource(), 0,
+                                     srcTexture->dxgiFormat());
 }
 
 void GrD3DDirectCommandList::setGraphicsRootConstantBufferView(
         unsigned int rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation) {
     SkASSERT(rootParameterIndex ==
                 (unsigned int) GrD3DRootSignature::ParamIndex::kConstantBufferView);
-    if (bufferLocation != fCurrentConstantBufferAddress) {
+    if (bufferLocation != fCurrentGraphicsConstantBufferAddress) {
         fCommandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);
-        fCurrentConstantBufferAddress = bufferLocation;
+        fCurrentGraphicsConstantBufferAddress = bufferLocation;
+    }
+}
+
+void GrD3DDirectCommandList::setComputeRootConstantBufferView(
+    unsigned int rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation) {
+    SkASSERT(rootParameterIndex ==
+             (unsigned int)GrD3DRootSignature::ParamIndex::kConstantBufferView);
+    if (bufferLocation != fCurrentComputeConstantBufferAddress) {
+        fCommandList->SetComputeRootConstantBufferView(rootParameterIndex, bufferLocation);
+        fCurrentComputeConstantBufferAddress = bufferLocation;
     }
 }
 
@@ -474,16 +553,28 @@ void GrD3DDirectCommandList::setGraphicsRootDescriptorTable(
     SkASSERT(rootParameterIndex ==
                     (unsigned int)GrD3DRootSignature::ParamIndex::kSamplerDescriptorTable ||
              rootParameterIndex ==
-                    (unsigned int)GrD3DRootSignature::ParamIndex::kTextureDescriptorTable);
-    if (fCurrentRootDescriptorTable[rootParameterIndex].ptr != baseDescriptor.ptr) {
+                    (unsigned int)GrD3DRootSignature::ParamIndex::kShaderViewDescriptorTable);
+    if (fCurrentGraphicsRootDescTable[rootParameterIndex].ptr != baseDescriptor.ptr) {
         fCommandList->SetGraphicsRootDescriptorTable(rootParameterIndex, baseDescriptor);
-        fCurrentRootDescriptorTable[rootParameterIndex] = baseDescriptor;
+        fCurrentGraphicsRootDescTable[rootParameterIndex] = baseDescriptor;
     }
 }
 
-void GrD3DDirectCommandList::setDescriptorHeaps(sk_sp<GrRecycledResource> srvCrvHeapResource,
-                                                ID3D12DescriptorHeap* srvCrvDescriptorHeap,
-                                                sk_sp<GrRecycledResource> samplerHeapResource,
+void GrD3DDirectCommandList::setComputeRootDescriptorTable(
+    unsigned int rootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor) {
+    SkASSERT(rootParameterIndex ==
+             (unsigned int)GrD3DRootSignature::ParamIndex::kSamplerDescriptorTable ||
+             rootParameterIndex ==
+             (unsigned int)GrD3DRootSignature::ParamIndex::kShaderViewDescriptorTable);
+    if (fCurrentComputeRootDescTable[rootParameterIndex].ptr != baseDescriptor.ptr) {
+        fCommandList->SetComputeRootDescriptorTable(rootParameterIndex, baseDescriptor);
+        fCurrentComputeRootDescTable[rootParameterIndex] = baseDescriptor;
+    }
+}
+
+// We don't need to add these resources to the command list.
+// They're added when we first allocate from a heap in a given submit.
+void GrD3DDirectCommandList::setDescriptorHeaps(ID3D12DescriptorHeap* srvCrvDescriptorHeap,
                                                 ID3D12DescriptorHeap* samplerDescriptorHeap) {
     if (srvCrvDescriptorHeap != fCurrentSRVCRVDescriptorHeap ||
         samplerDescriptorHeap != fCurrentSamplerDescriptorHeap) {
@@ -493,8 +584,6 @@ void GrD3DDirectCommandList::setDescriptorHeaps(sk_sp<GrRecycledResource> srvCrv
         };
 
         fCommandList->SetDescriptorHeaps(2, heaps);
-        this->addRecycledResource(std::move(srvCrvHeapResource));
-        this->addRecycledResource(std::move(samplerHeapResource));
         fCurrentSRVCRVDescriptorHeap = srvCrvDescriptorHeap;
         fCurrentSamplerDescriptorHeap = samplerDescriptorHeap;
     }
@@ -506,7 +595,8 @@ void GrD3DDirectCommandList::addSampledTextureRef(GrD3DTexture* texture) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<GrD3DCopyCommandList> GrD3DCopyCommandList::Make(ID3D12Device* device) {
+std::unique_ptr<GrD3DCopyCommandList> GrD3DCopyCommandList::Make(GrD3DGpu* gpu) {
+    ID3D12Device* device = gpu->device();
     gr_cp<ID3D12CommandAllocator> allocator;
     GR_D3D_CALL_ERRCHECK(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
                                                         IID_PPV_ARGS(&allocator)));

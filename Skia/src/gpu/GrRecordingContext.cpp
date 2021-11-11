@@ -17,13 +17,15 @@
 #include "src/gpu/GrProgramDesc.h"
 #include "src/gpu/GrProxyProvider.h"
 #include "src/gpu/GrRecordingContextPriv.h"
-#include "src/gpu/GrSurfaceContext.h"
-#include "src/gpu/GrSurfaceDrawContext.h"
 #include "src/gpu/SkGr.h"
+#include "src/gpu/SurfaceContext.h"
 #include "src/gpu/effects/GrSkSLFP.h"
-#include "src/gpu/ops/GrAtlasTextOp.h"
 #include "src/gpu/text/GrTextBlob.h"
 #include "src/gpu/text/GrTextBlobCache.h"
+
+#if SK_GPU_V1
+#include "src/gpu/ops/AtlasTextOp.h"
+#endif
 
 GrRecordingContext::ProgramData::ProgramData(std::unique_ptr<const GrProgramDesc> desc,
                                              const GrProgramInfo* info)
@@ -38,14 +40,17 @@ GrRecordingContext::ProgramData::ProgramData(ProgramData&& other)
 
 GrRecordingContext::ProgramData::~ProgramData() = default;
 
-GrRecordingContext::GrRecordingContext(sk_sp<GrContextThreadSafeProxy> proxy)
+GrRecordingContext::GrRecordingContext(sk_sp<GrContextThreadSafeProxy> proxy, bool ddlRecording)
         : INHERITED(std::move(proxy))
-        , fAuditTrail(new GrAuditTrail()) {
+        , fAuditTrail(new GrAuditTrail())
+        , fArenas(ddlRecording) {
     fProxyProvider = std::make_unique<GrProxyProvider>(this);
 }
 
 GrRecordingContext::~GrRecordingContext() {
-    GrAtlasTextOp::ClearCache();
+#if SK_GPU_V1
+    skgpu::v1::AtlasTextOp::ClearCache();
+#endif
 }
 
 int GrRecordingContext::maxSurfaceSampleCountForColorType(SkColorType colorType) const {
@@ -60,7 +65,8 @@ bool GrRecordingContext::init() {
         return false;
     }
 
-    GrPathRendererChain::Options prcOptions;
+#if SK_GPU_V1
+    skgpu::v1::PathRendererChain::Options prcOptions;
     prcOptions.fAllowPathMaskCaching = this->options().fAllowPathMaskCaching;
 #if GR_TEST_UTILS
     prcOptions.fGpuPathRenderers = this->options().fGpuPathRenderers;
@@ -69,15 +75,20 @@ bool GrRecordingContext::init() {
     if (this->options().fDisableDistanceFieldPaths) {
         prcOptions.fGpuPathRenderers &= ~GpuPathRenderers::kSmall;
     }
+#endif
 
-    bool reduceOpsTaskSplitting = false;
-    if (GrContextOptions::Enable::kYes == this->options().fReduceOpsTaskSplitting) {
+    bool reduceOpsTaskSplitting = true;
+    if (this->caps()->avoidReorderingRenderTasks()) {
+        reduceOpsTaskSplitting = false;
+    } else if (GrContextOptions::Enable::kYes == this->options().fReduceOpsTaskSplitting) {
         reduceOpsTaskSplitting = true;
     } else if (GrContextOptions::Enable::kNo == this->options().fReduceOpsTaskSplitting) {
         reduceOpsTaskSplitting = false;
     }
     fDrawingManager.reset(new GrDrawingManager(this,
+#if SK_GPU_V1
                                                prcOptions,
+#endif
                                                reduceOpsTaskSplitting));
     return true;
 }
@@ -96,48 +107,37 @@ void GrRecordingContext::destroyDrawingManager() {
     fDrawingManager.reset();
 }
 
-GrRecordingContext::Arenas::Arenas(GrMemoryPool* opMemoryPool,
-                                   SkArenaAlloc* recordTimeAllocator,
+GrRecordingContext::Arenas::Arenas(SkArenaAlloc* recordTimeAllocator,
                                    GrSubRunAllocator* subRunAllocator)
-        : fOpMemoryPool(opMemoryPool)
-        , fRecordTimeAllocator(recordTimeAllocator)
+        : fRecordTimeAllocator(recordTimeAllocator)
         , fRecordTimeSubRunAllocator(subRunAllocator) {
     // OwnedArenas should instantiate these before passing the bare pointer off to this struct.
-    SkASSERT(opMemoryPool);
-    SkASSERT(recordTimeAllocator);
     SkASSERT(subRunAllocator);
 }
 
 // Must be defined here so that std::unique_ptr can see the sizes of the various pools, otherwise
 // it can't generate a default destructor for them.
-GrRecordingContext::OwnedArenas::OwnedArenas() {}
+GrRecordingContext::OwnedArenas::OwnedArenas(bool ddlRecording) : fDDLRecording(ddlRecording) {}
 GrRecordingContext::OwnedArenas::~OwnedArenas() {}
 
 GrRecordingContext::OwnedArenas& GrRecordingContext::OwnedArenas::operator=(OwnedArenas&& a) {
-    fOpMemoryPool = std::move(a.fOpMemoryPool);
+    fDDLRecording = a.fDDLRecording;
     fRecordTimeAllocator = std::move(a.fRecordTimeAllocator);
     fRecordTimeSubRunAllocator = std::move(a.fRecordTimeSubRunAllocator);
     return *this;
 }
 
 GrRecordingContext::Arenas GrRecordingContext::OwnedArenas::get() {
-    if (!fOpMemoryPool) {
-        // DDL TODO: should the size of the memory pool be decreased in DDL mode? CPU-side memory
-        // consumed in DDL mode vs. normal mode for a single skp might be a good metric of wasted
-        // memory.
-        fOpMemoryPool = GrMemoryPool::Make(16384, 16384);
-    }
-
-    if (!fRecordTimeAllocator) {
+    if (!fRecordTimeAllocator && fDDLRecording) {
         // TODO: empirically determine a better number for SkArenaAlloc's firstHeapAllocation param
-        fRecordTimeAllocator = std::make_unique<SkArenaAlloc>(sizeof(GrPipeline) * 100);
+        fRecordTimeAllocator = std::make_unique<SkArenaAlloc>(1024);
     }
 
     if (!fRecordTimeSubRunAllocator) {
         fRecordTimeSubRunAllocator = std::make_unique<GrSubRunAllocator>();
     }
 
-    return {fOpMemoryPool.get(), fRecordTimeAllocator.get(), fRecordTimeSubRunAllocator.get()};
+    return {fRecordTimeAllocator.get(), fRecordTimeSubRunAllocator.get()};
 }
 
 GrRecordingContext::OwnedArenas&& GrRecordingContext::detachArenas() {
@@ -178,15 +178,6 @@ bool GrRecordingContext::colorTypeSupportedAsImage(SkColorType colorType) const 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sk_sp<const GrCaps> GrRecordingContextPriv::refCaps() const {
-    return fContext->refCaps();
-}
-
-void GrRecordingContextPriv::addOnFlushCallbackObject(GrOnFlushCallbackObject* onFlushCBObject) {
-    fContext->addOnFlushCallbackObject(onFlushCBObject);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef SK_ENABLE_DUMP_GPU
 #include "src/utils/SkJSONWriter.h"
@@ -209,18 +200,51 @@ void GrRecordingContext::dumpJSON(SkJSONWriter*) const { }
 
 #if GR_GPU_STATS
 
-void GrRecordingContext::Stats::dump(SkString* out) {
+void GrRecordingContext::Stats::dump(SkString* out) const {
     out->appendf("Num Path Masks Generated: %d\n", fNumPathMasksGenerated);
     out->appendf("Num Path Mask Cache Hits: %d\n", fNumPathMaskCacheHits);
 }
 
 void GrRecordingContext::Stats::dumpKeyValuePairs(SkTArray<SkString>* keys,
-                                                  SkTArray<double>* values) {
+                                                  SkTArray<double>* values) const {
     keys->push_back(SkString("path_masks_generated"));
     values->push_back(fNumPathMasksGenerated);
 
     keys->push_back(SkString("path_mask_cache_hits"));
     values->push_back(fNumPathMaskCacheHits);
+}
+
+void GrRecordingContext::DMSAAStats::dumpKeyValuePairs(SkTArray<SkString>* keys,
+                                                       SkTArray<double>* values) const {
+    keys->push_back(SkString("dmsaa_render_passes"));
+    values->push_back(fNumRenderPasses);
+
+    keys->push_back(SkString("dmsaa_multisample_render_passes"));
+    values->push_back(fNumMultisampleRenderPasses);
+
+    for (const auto& [name, count] : fTriggerCounts) {
+        keys->push_back(SkStringPrintf("dmsaa_trigger_%s", name.c_str()));
+        values->push_back(count);
+    }
+}
+
+void GrRecordingContext::DMSAAStats::dump() const {
+    SkDebugf("DMSAA Render Passes: %d\n", fNumRenderPasses);
+    SkDebugf("DMSAA Multisample Render Passes: %d\n", fNumMultisampleRenderPasses);
+    if (!fTriggerCounts.empty()) {
+        SkDebugf("DMSAA Triggers:\n");
+        for (const auto& [name, count] : fTriggerCounts) {
+            SkDebugf("    %s: %d\n", name.c_str(), count);
+        }
+    }
+}
+
+void GrRecordingContext::DMSAAStats::merge(const DMSAAStats& stats) {
+    fNumRenderPasses += stats.fNumRenderPasses;
+    fNumMultisampleRenderPasses += stats.fNumMultisampleRenderPasses;
+    for (const auto& [name, count] : stats.fTriggerCounts) {
+        fTriggerCounts[name] += count;
+    }
 }
 
 #endif // GR_GPU_STATS

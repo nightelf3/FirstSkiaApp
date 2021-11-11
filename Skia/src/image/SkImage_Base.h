@@ -65,7 +65,7 @@ public:
                                              RescaleGamma,
                                              RescaleMode,
                                              ReadPixelsCallback,
-                                             ReadPixelsContext);
+                                             ReadPixelsContext) const;
     /**
      * Default implementation does a rescale/read/yuv conversion and then calls the callback.
      */
@@ -76,7 +76,7 @@ public:
                                                    RescaleGamma,
                                                    RescaleMode,
                                                    ReadPixelsCallback,
-                                                   ReadPixelsContext);
+                                                   ReadPixelsContext) const;
 
     virtual GrImageContext* context() const { return nullptr; }
 
@@ -84,7 +84,7 @@ public:
     GrDirectContext* directContext() const;
 
 #if SK_SUPPORT_GPU
-    virtual GrSemaphoresSubmitted onFlush(GrDirectContext*, const GrFlushInfo&) {
+    virtual GrSemaphoresSubmitted onFlush(GrDirectContext*, const GrFlushInfo&) const {
         return GrSemaphoresSubmitted::kNo;
     }
 
@@ -97,19 +97,34 @@ public:
             GrMipmapped mipmapped,
             GrImageTexGenPolicy policy = GrImageTexGenPolicy::kDraw) const;
 
+    /**
+     * Returns a GrFragmentProcessor that can be used with the passed GrRecordingContext to
+     * draw the image. SkSamplingOptions indicates the filter and SkTileMode[] indicates the x and
+     * y tile modes. The passed matrix is applied to the coordinates before sampling the image.
+     * Optional 'subset' indicates whether the tile modes should be applied to a subset of the image
+     * Optional 'domain' is a bound on the coordinates of the image that will be required and can be
+     * used to optimize the shader if 'subset' is also specified.
+     */
+    std::unique_ptr<GrFragmentProcessor> asFragmentProcessor(GrRecordingContext*,
+                                                             SkSamplingOptions,
+                                                             const SkTileMode[2],
+                                                             const SkMatrix&,
+                                                             const SkRect* subset = nullptr,
+                                                             const SkRect* domain = nullptr) const;
+
     virtual bool isYUVA() const { return false; }
 
     // If this image is the current cached image snapshot of a surface then this is called when the
     // surface is destroyed to indicate no further writes may happen to surface backing store.
     virtual void generatingSurfaceIsDeleted() {}
+
+    virtual GrBackendTexture onGetBackendTexture(bool flushPendingGrContextIO,
+                                                 GrSurfaceOrigin* origin) const;
 #endif
 
     virtual bool onPinAsTexture(GrRecordingContext*) const { return false; }
     virtual void onUnpinAsTexture(GrRecordingContext*) const {}
     virtual bool isPinnedOnContext(GrRecordingContext*) const { return false; }
-
-    virtual GrBackendTexture onGetBackendTexture(bool flushPendingGrContextIO,
-                                                 GrSurfaceOrigin* origin) const;
 
     // return a read-only copy of the pixels. We promise to not modify them,
     // but only inspect them (or encode them).
@@ -158,6 +173,26 @@ protected:
                                        GrSurfaceProxyView src,
                                        GrMipmapped,
                                        GrImageTexGenPolicy);
+
+    static std::unique_ptr<GrFragmentProcessor> MakeFragmentProcessorFromView(GrRecordingContext*,
+                                                                              GrSurfaceProxyView,
+                                                                              SkAlphaType,
+                                                                              SkSamplingOptions,
+                                                                              const SkTileMode[2],
+                                                                              const SkMatrix&,
+                                                                              const SkRect* subset,
+                                                                              const SkRect* domain);
+
+    /**
+     * Returns input view if it is already mipmapped. Otherwise, attempts to make a mipmapped view
+     * with the same contents. If the mipmapped copy is successfully created it will be cached
+     * using the image unique ID. A subsequent call with the same unique ID will return the cached
+     * view if it has not been purged. The view is cached with a key domain specific to this
+     * function.
+     */
+    static GrSurfaceProxyView FindOrMakeCachedMipmappedView(GrRecordingContext*,
+                                                            GrSurfaceProxyView,
+                                                            uint32_t imageUniqueID);
 #endif
 
 private:
@@ -166,6 +201,14 @@ private:
             GrRecordingContext*,
             GrMipmapped,
             GrImageTexGenPolicy policy) const = 0;
+
+    virtual std::unique_ptr<GrFragmentProcessor> onAsFragmentProcessor(
+            GrRecordingContext*,
+            SkSamplingOptions,
+            const SkTileMode[2],
+            const SkMatrix&,
+            const SkRect* subset,
+            const SkRect* domain) const = 0;
 #endif
     // Set true by caches when they cache content that's derived from the current pixels.
     mutable std::atomic<bool> fAddedToRasterCache;

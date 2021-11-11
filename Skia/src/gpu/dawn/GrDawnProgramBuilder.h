@@ -30,34 +30,15 @@ struct GrDawnProgram : public SkRefCnt {
             fRenderTargetSize.fHeight = -1;
             fRenderTargetOrigin = (GrSurfaceOrigin) -1;
         }
-
-        /**
-         * Gets a float4 that adjusts the position from Skia device coords to GL's normalized device
-         * coords. Assuming the transformed position, pos, is a homogeneous float3, the vec, v, is
-         * applied as such:
-         * pos.x = dot(v.xy, pos.xz)
-         * pos.y = dot(v.zw, pos.yz)
-         */
-        void getRTAdjustmentVec(float* destVec) {
-            destVec[0] = 2.f / fRenderTargetSize.fWidth;
-            destVec[1] = -1.f;
-            if (kTopLeft_GrSurfaceOrigin == fRenderTargetOrigin) {
-                destVec[2] = -2.f / fRenderTargetSize.fHeight;
-                destVec[3] = 1.f;
-            } else {
-                destVec[2] = 2.f / fRenderTargetSize.fHeight;
-                destVec[3] = -1.f;
-            }
-        }
     };
     typedef GrGLSLBuiltinUniformHandles BuiltinUniformHandles;
     GrDawnProgram(const GrSPIRVUniformHandler::UniformInfoArray& uniforms,
                   uint32_t uniformBufferSize)
       : fDataManager(uniforms, uniformBufferSize) {
     }
-    std::unique_ptr<GrGLSLPrimitiveProcessor> fGeometryProcessor;
-    std::unique_ptr<GrGLSLXferProcessor> fXferProcessor;
-    std::vector<std::unique_ptr<GrGLSLFragmentProcessor>> fFPImpls;
+    std::unique_ptr<GrGeometryProcessor::ProgramImpl> fGPImpl;
+    std::unique_ptr<GrXferProcessor::ProgramImpl> fXPImpl;
+    std::vector<std::unique_ptr<GrFragmentProcessor::ProgramImpl>> fFPImpls;
     std::vector<wgpu::BindGroupLayout> fBindGroupLayouts;
     wgpu::RenderPipeline fRenderPipeline;
     GrDawnProgramDataManager fDataManager;
@@ -66,10 +47,10 @@ struct GrDawnProgram : public SkRefCnt {
 
     void setRenderTargetState(const GrRenderTarget*, GrSurfaceOrigin);
     wgpu::BindGroup setUniformData(GrDawnGpu*, const GrRenderTarget*, const GrProgramInfo&);
-    wgpu::BindGroup setTextures(GrDawnGpu* gpu,
-                                const GrPrimitiveProcessor& primProc,
-                                const GrPipeline& pipeline,
-                                const GrSurfaceProxy* const primProcTextures[]);
+    wgpu::BindGroup setTextures(GrDawnGpu*,
+                                const GrGeometryProcessor&,
+                                const GrPipeline&,
+                                const GrSurfaceProxy* const geomProcTextures[]);
 };
 
 class GrDawnProgramBuilder : public GrGLSLProgramBuilder {
@@ -92,7 +73,6 @@ public:
 
 private:
     GrDawnProgramBuilder(GrDawnGpu*,
-                         GrRenderTarget*,
                          const GrProgramInfo&,
                          GrProgramDesc*);
     wgpu::ShaderModule createShaderModule(const GrGLSLShaderBuilder&, SkSL::ProgramKind,

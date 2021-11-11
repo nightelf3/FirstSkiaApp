@@ -9,6 +9,7 @@
 
 #include "include/gpu/GrDirectContext.h"
 #include "src/core/SkTaskGroup.h"
+#include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrDirectContextPriv.h"
 #include "src/gpu/GrSamplerState.h"
 #include "src/gpu/GrStencilSettings.h"
@@ -107,7 +108,7 @@ sk_sp<const GrVkPipeline> GrVkResourceProvider::makePipeline(
 // only used for framebuffer creation. When we actually render we will create
 // RenderPasses as needed that are compatible with the framebuffer.
 const GrVkRenderPass*
-GrVkResourceProvider::findCompatibleRenderPass(const GrVkRenderTarget& target,
+GrVkResourceProvider::findCompatibleRenderPass(GrVkRenderTarget* target,
                                                CompatibleRPHandle* compatibleHandle,
                                                bool withResolve,
                                                bool withStencil,
@@ -117,7 +118,7 @@ GrVkResourceProvider::findCompatibleRenderPass(const GrVkRenderTarget& target,
     // target has (color, stencil) and the attachments format and sample count.
     GrVkRenderPass::AttachmentFlags attachmentFlags;
     GrVkRenderPass::AttachmentsDescriptor attachmentsDesc;
-    target.getAttachmentsDescriptor(&attachmentsDesc, &attachmentFlags, withResolve, withStencil);
+    target->getAttachmentsDescriptor(&attachmentsDesc, &attachmentFlags, withResolve, withStencil);
 
     return this->findCompatibleRenderPass(&attachmentsDesc, attachmentFlags, selfDepFlags,
                                           loadFromResolve, compatibleHandle);
@@ -280,7 +281,7 @@ GrVkPipelineState* GrVkResourceProvider::findOrCreateCompatiblePipelineState(
 
 sk_sp<const GrVkPipeline> GrVkResourceProvider::findOrCreateMSAALoadPipeline(
         const GrVkRenderPass& renderPass,
-        const GrVkRenderTarget* dst,
+        int numSamples,
         VkPipelineShaderStageCreateInfo* shaderStageInfo,
         VkPipelineLayout pipelineLayout) {
     // Find or Create a compatible pipeline
@@ -293,14 +294,13 @@ sk_sp<const GrVkPipeline> GrVkResourceProvider::findOrCreateMSAALoadPipeline(
     if (!pipeline) {
         pipeline = GrVkPipeline::Make(
                 fGpu,
-                /*vertexAttribs=*/GrPrimitiveProcessor::AttributeSet(),
-                /*instanceAttribs=*/GrPrimitiveProcessor::AttributeSet(),
+                /*vertexAttribs=*/GrGeometryProcessor::AttributeSet(),
+                /*instanceAttribs=*/GrGeometryProcessor::AttributeSet(),
                 GrPrimitiveType::kTriangleStrip,
                 kTopLeft_GrSurfaceOrigin,
                 GrStencilSettings(),
-                dst->numSamples(),
+                numSamples,
                 /*isHWantialiasState=*/false,
-                /*isMixedSampled=*/false,
                 GrXferProcessor::BlendInfo(),
                 /*isWireframe=*/false,
                 /*useConservativeRaster=*/false,
@@ -398,7 +398,7 @@ void GrVkResourceProvider::recycleDescriptorSet(const GrVkDescriptorSet* descSet
 }
 
 GrVkCommandPool* GrVkResourceProvider::findOrCreateCommandPool() {
-    std::unique_lock<std::recursive_mutex> lock(fBackgroundMutex);
+    SkAutoMutexExclusive lock(fBackgroundMutex);
     GrVkCommandPool* result;
     if (fAvailableCommandPools.count()) {
         result = fAvailableCommandPools.back();
@@ -488,7 +488,7 @@ void GrVkResourceProvider::destroyResources() {
     }
     fExternalRenderPasses.reset();
 
-    // Iterate through all store GrVkSamplers and unref them before resetting the hash.
+    // Iterate through all store GrVkSamplers and unref them before resetting the hash table.
     fSamplers.foreach([&](auto* elt) { elt->unref(); });
     fSamplers.reset();
 
@@ -506,11 +506,14 @@ void GrVkResourceProvider::destroyResources() {
     }
     fActiveCommandPools.reset();
 
-    for (GrVkCommandPool* pool : fAvailableCommandPools) {
-        SkASSERT(pool->unique());
-        pool->unref();
+    {
+        SkAutoMutexExclusive lock(fBackgroundMutex);
+        for (GrVkCommandPool* pool : fAvailableCommandPools) {
+            SkASSERT(pool->unique());
+            pool->unref();
+        }
+        fAvailableCommandPools.reset();
     }
-    fAvailableCommandPools.reset();
 
     // We must release/destroy all command buffers and pipeline states before releasing the
     // GrVkDescriptorSetManagers. Additionally, we must release all uniform buffers since they hold
@@ -520,6 +523,15 @@ void GrVkResourceProvider::destroyResources() {
     }
     fDescriptorSetManagers.reset();
 
+}
+
+void GrVkResourceProvider::releaseUnlockedBackendObjects() {
+    SkAutoMutexExclusive lock(fBackgroundMutex);
+    for (GrVkCommandPool* pool : fAvailableCommandPools) {
+        SkASSERT(pool->unique());
+        pool->unref();
+    }
+    fAvailableCommandPools.reset();
 }
 
 void GrVkResourceProvider::backgroundReset(GrVkCommandPool* pool) {
@@ -547,7 +559,7 @@ void GrVkResourceProvider::reset(GrVkCommandPool* pool) {
     TRACE_EVENT0("skia.gpu", TRACE_FUNC);
     SkASSERT(pool->unique());
     pool->reset(fGpu);
-    std::unique_lock<std::recursive_mutex> providerLock(fBackgroundMutex);
+    SkAutoMutexExclusive lock(fBackgroundMutex);
     fAvailableCommandPools.push_back(pool);
 }
 

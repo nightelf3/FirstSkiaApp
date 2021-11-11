@@ -33,7 +33,7 @@ void SkDrawableGlyphBuffer::startSource(const SkZip<const SkGlyphID, const SkPoi
     memcpy(fPositions, positions.data(), positions.size() * sizeof(SkPoint));
 
     // Convert from SkGlyphIDs to SkPackedGlyphIDs.
-    SkGlyphVariant* packedIDCursor = fMultiBuffer;
+    SkGlyphVariant* packedIDCursor = fMultiBuffer.get();
     for (auto t : source) {
         *packedIDCursor++ = SkPackedGlyphID{std::get<0>(t)};
     }
@@ -61,7 +61,7 @@ void SkDrawableGlyphBuffer::startBitmapDevice(
     // Convert glyph ids and positions to packed glyph ids.
     SkZip<const SkGlyphID, const SkPoint> withMappedPos =
             SkMakeZip(source.get<0>(), fPositions.get());
-    SkGlyphVariant* packedIDCursor = fMultiBuffer;
+    SkGlyphVariant* packedIDCursor = fMultiBuffer.get();
     for (auto [glyphID, pos] : withMappedPos) {
         *packedIDCursor++ = SkPackedGlyphID{glyphID, pos, mask};
     }
@@ -98,6 +98,16 @@ void SkDrawableGlyphBuffer::startGPUDevice(
     SkDEBUGCODE(fPhase = kInput);
 }
 
+SkString SkDrawableGlyphBuffer::dumpInput() const {
+    SkASSERT(fPhase == kInput);
+
+    SkString msg;
+    for (auto [packedGlyphID, pos]
+            : SkZip<SkGlyphVariant, SkPoint>{fInputSize, fMultiBuffer.get(), fPositions.get()}) {
+        msg.appendf("0x%x:(%a,%a), ", packedGlyphID.packedID().value(), pos.x(), pos.y());
+    }
+    return msg;
+}
 
 void SkDrawableGlyphBuffer::reset() {
     SkDEBUGCODE(fPhase = kReset);

@@ -39,15 +39,6 @@ sk_sp<SkImageFilter> SkImageFilters::MatrixTransform(
     return SkMatrixImageFilter::Make(transform, sampling, std::move(input));
 }
 
-#ifdef SK_SUPPORT_LEGACY_MATRIX_IMAGEFILTER
-sk_sp<SkImageFilter> SkImageFilters::MatrixTransform(
-        const SkMatrix& transform, SkFilterQuality filterQuality, sk_sp<SkImageFilter> input) {
-    auto sampling = SkSamplingOptions(filterQuality,
-                                      SkSamplingOptions::kMedium_asMipmapLinear);
-    return SkMatrixImageFilter::Make(transform, sampling, std::move(input));
-}
-#endif
-
 sk_sp<SkFlattenable> SkMatrixImageFilter::CreateProc(SkReadBuffer& buffer) {
     SK_IMAGEFILTER_UNFLATTEN_COMMON(common, 1);
     SkMatrix matrix;
@@ -55,8 +46,7 @@ sk_sp<SkFlattenable> SkMatrixImageFilter::CreateProc(SkReadBuffer& buffer) {
 
     auto sampling = [&]() {
         if (buffer.isVersionLT(SkPicturePriv::kMatrixImageFilterSampling_Version)) {
-            return SkSamplingOptions(buffer.read32LE(kLast_SkFilterQuality),
-                                     SkSamplingOptions::kMedium_asMipmapLinear);
+            return SkSamplingPriv::FromFQ(buffer.read32LE(kLast_SkLegacyFQ), kLinear_SkMediumAs);
         } else {
             return SkSamplingPriv::Read(buffer);
         }

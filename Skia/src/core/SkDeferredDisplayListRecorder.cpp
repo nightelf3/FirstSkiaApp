@@ -23,30 +23,6 @@ SkCanvas* SkDeferredDisplayListRecorder::getCanvas() { return nullptr; }
 
 sk_sp<SkDeferredDisplayList> SkDeferredDisplayListRecorder::detach() { return nullptr; }
 
-sk_sp<SkImage> SkDeferredDisplayListRecorder::makePromiseTexture(
-        const GrBackendFormat& backendFormat,
-        int width,
-        int height,
-        GrMipmapped mipMapped,
-        GrSurfaceOrigin origin,
-        SkColorType colorType,
-        SkAlphaType alphaType,
-        sk_sp<SkColorSpace> colorSpace,
-        PromiseImageTextureFulfillProc textureFulfillProc,
-        PromiseImageTextureReleaseProc textureReleaseProc,
-        PromiseImageTextureContext textureContext) {
-    return nullptr;
-}
-
-sk_sp<SkImage> SkDeferredDisplayListRecorder::makeYUVAPromiseTexture(
-        const GrYUVABackendTextureInfo& yuvaBackendTextureInfo,
-        sk_sp<SkColorSpace> imageColorSpace,
-        PromiseImageTextureFulfillProc textureFulfillProc,
-        PromiseImageTextureReleaseProc textureReleaseProc,
-        PromiseImageTextureContext textureContexts[]) {
-    return nullptr;
-}
-
 #else
 
 #include "include/core/SkPromiseImageTexture.h"
@@ -54,7 +30,6 @@ sk_sp<SkImage> SkDeferredDisplayListRecorder::makeYUVAPromiseTexture(
 #include "include/gpu/GrYUVABackendTextures.h"
 #include "src/gpu/GrProxyProvider.h"
 #include "src/gpu/GrRecordingContextPriv.h"
-#include "src/gpu/GrSurfaceDrawContext.h"
 #include "src/gpu/GrTexture.h"
 #include "src/gpu/SkGr.h"
 #include "src/image/SkImage_Gpu.h"
@@ -84,7 +59,6 @@ SkDeferredDisplayListRecorder::~SkDeferredDisplayListRecorder() {
         proxyProvider->orphanAllUniqueKeys();
     }
 }
-
 
 bool SkDeferredDisplayListRecorder::init() {
     SkASSERT(fContext);
@@ -157,13 +131,11 @@ bool SkDeferredDisplayListRecorder::init() {
         optionalTextureInfo = &kTextureInfo;
     }
 
-    GrSwizzle readSwizzle = caps->getReadSwizzle(fCharacterization.backendFormat(), grColorType);
-
     fTargetProxy = proxyProvider->createLazyRenderTargetProxy(
             [lazyProxyData = fLazyProxyData](GrResourceProvider* resourceProvider,
                                              const GrSurfaceProxy::LazySurfaceDesc&) {
                 // The proxy backing the destination surface had better have been instantiated
-                // prior to the this one (i.e., the proxy backing the DLL's surface).
+                // prior to this one (i.e., the proxy backing the DDL's surface).
                 // Fulfill this lazy proxy with the destination surface's GrRenderTarget.
                 SkASSERT(lazyProxyData->fReplayDest->peekSurface());
                 auto surface = sk_ref_sp<GrSurface>(lazyProxyData->fReplayDest->peekSurface());
@@ -186,16 +158,17 @@ bool SkDeferredDisplayListRecorder::init() {
     }
     fTargetProxy->priv().setIsDDLTarget();
 
-    GrSwizzle writeSwizzle = caps->getWriteSwizzle(fCharacterization.backendFormat(), grColorType);
+    auto device = fContext->priv().createDevice(grColorType,
+                                                fTargetProxy,
+                                                fCharacterization.refColorSpace(),
+                                                fCharacterization.origin(),
+                                                fCharacterization.surfaceProps(),
+                                                skgpu::BaseDevice::InitContents::kUninit);
+    if (!device) {
+        return false;
+    }
 
-    GrSurfaceProxyView readView(fTargetProxy, fCharacterization.origin(), readSwizzle);
-    GrSurfaceProxyView writeView(fTargetProxy, fCharacterization.origin(), writeSwizzle);
-
-    auto rtc = std::make_unique<GrSurfaceDrawContext>(fContext.get(), std::move(readView),
-                                                      std::move(writeView), grColorType,
-                                                      fCharacterization.refColorSpace(),
-                                                      &fCharacterization.surfaceProps());
-    fSurface = SkSurface_Gpu::MakeWrappedRenderTarget(fContext.get(), std::move(rtc));
+    fSurface = sk_make_sp<SkSurface_Gpu>(std::move(device));
     return SkToBool(fSurface.get());
 }
 

@@ -15,14 +15,12 @@
 #include "src/core/SkMathPriv.h"
 #include "src/core/SkMipmap.h"
 #include "src/gpu/GrAttachment.h"
-#include "src/gpu/GrAuditTrail.h"
 #include "src/gpu/GrBackendUtils.h"
 #include "src/gpu/GrCaps.h"
 #include "src/gpu/GrDataUtils.h"
 #include "src/gpu/GrDirectContextPriv.h"
 #include "src/gpu/GrGpuResourcePriv.h"
 #include "src/gpu/GrNativeRect.h"
-#include "src/gpu/GrPathRendering.h"
 #include "src/gpu/GrPipeline.h"
 #include "src/gpu/GrRenderTarget.h"
 #include "src/gpu/GrResourceCache.h"
@@ -34,7 +32,6 @@
 #include "src/gpu/GrTextureProxyPriv.h"
 #include "src/gpu/GrTracing.h"
 #include "src/sksl/SkSLCompiler.h"
-#include "src/utils/SkJSONWriter.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -100,6 +97,7 @@ static bool validate_texel_levels(SkISize dimensions, GrColorType texelColorType
 
 sk_sp<GrTexture> GrGpu::createTextureCommon(SkISize dimensions,
                                             const GrBackendFormat& format,
+                                            GrTextureType textureType,
                                             GrRenderable renderable,
                                             int renderTargetSampleCnt,
                                             SkBudgeted budgeted,
@@ -112,8 +110,12 @@ sk_sp<GrTexture> GrGpu::createTextureCommon(SkISize dimensions,
     }
 
     GrMipmapped mipMapped = mipLevelCount > 1 ? GrMipmapped::kYes : GrMipmapped::kNo;
-    if (!this->caps()->validateSurfaceParams(dimensions, format, renderable, renderTargetSampleCnt,
-                                             mipMapped)) {
+    if (!this->caps()->validateSurfaceParams(dimensions,
+                                             format,
+                                             renderable,
+                                             renderTargetSampleCnt,
+                                             mipMapped,
+                                             textureType)) {
         return nullptr;
     }
 
@@ -149,6 +151,7 @@ sk_sp<GrTexture> GrGpu::createTextureCommon(SkISize dimensions,
 
 sk_sp<GrTexture> GrGpu::createTexture(SkISize dimensions,
                                       const GrBackendFormat& format,
+                                      GrTextureType textureType,
                                       GrRenderable renderable,
                                       int renderTargetSampleCnt,
                                       GrMipmapped mipMapped,
@@ -161,8 +164,15 @@ sk_sp<GrTexture> GrGpu::createTexture(SkISize dimensions,
     }
     uint32_t levelClearMask =
             this->caps()->shouldInitializeTextures() ? (1 << mipLevelCount) - 1 : 0;
-    auto tex = this->createTextureCommon(dimensions, format, renderable, renderTargetSampleCnt,
-                                         budgeted, isProtected, mipLevelCount, levelClearMask);
+    auto tex = this->createTextureCommon(dimensions,
+                                         format,
+                                         textureType,
+                                         renderable,
+                                         renderTargetSampleCnt,
+                                         budgeted,
+                                         isProtected,
+                                         mipLevelCount,
+                                         levelClearMask);
     if (tex && mipMapped == GrMipmapped::kYes && levelClearMask) {
         tex->markMipmapsClean();
     }
@@ -171,6 +181,7 @@ sk_sp<GrTexture> GrGpu::createTexture(SkISize dimensions,
 
 sk_sp<GrTexture> GrGpu::createTexture(SkISize dimensions,
                                       const GrBackendFormat& format,
+                                      GrTextureType textureType,
                                       GrRenderable renderable,
                                       int renderTargetSampleCnt,
                                       SkBudgeted budgeted,
@@ -201,15 +212,26 @@ sk_sp<GrTexture> GrGpu::createTexture(SkISize dimensions,
         }
     }
 
-    auto tex = this->createTextureCommon(dimensions, format, renderable, renderTargetSampleCnt,
-                                         budgeted, isProtected, texelLevelCount, levelClearMask);
+    auto tex = this->createTextureCommon(dimensions,
+                                         format,
+                                         textureType,
+                                         renderable,
+                                         renderTargetSampleCnt,
+                                         budgeted,
+                                         isProtected,
+                                         texelLevelCount,
+                                         levelClearMask);
     if (tex) {
         bool markMipLevelsClean = false;
         // Currently if level 0 does not have pixels then no other level may, as enforced by
         // validate_texel_levels.
         if (texelLevelCount && texels[0].fPixels) {
-            if (!this->writePixels(tex.get(), 0, 0, dimensions.fWidth, dimensions.fHeight,
-                                   textureColorType, srcColorType, texels, texelLevelCount)) {
+            if (!this->writePixels(tex.get(),
+                                   SkIRect::MakeSize(dimensions),
+                                   textureColorType,
+                                   srcColorType,
+                                   texels,
+                                   texelLevelCount)) {
                 return nullptr;
             }
             // Currently if level[1] of mip map has pixel data then so must all other levels.
@@ -243,12 +265,16 @@ sk_sp<GrTexture> GrGpu::createCompressedTexture(SkISize dimensions,
     if (!data) {
         return nullptr;
     }
-    if (!this->caps()->isFormatTexturable(format)) {
-        return nullptr;
-    }
 
     // TODO: expand CompressedDataIsCorrect to work here too
     SkImage::CompressionType compressionType = GrBackendFormatToCompressionType(format);
+    if (compressionType == SkImage::CompressionType::kNone) {
+        return nullptr;
+    }
+
+    if (!this->caps()->isFormatTexturable(format, GrTextureType::k2D)) {
+        return nullptr;
+    }
 
     if (dataSize < SkCompressedDataSize(compressionType, dimensions, nullptr,
                                         mipMapped == GrMipmapped::kYes)) {
@@ -268,7 +294,7 @@ sk_sp<GrTexture> GrGpu::wrapBackendTexture(const GrBackendTexture& backendTex,
     const GrCaps* caps = this->caps();
     SkASSERT(caps);
 
-    if (!caps->isFormatTexturable(backendTex.getBackendFormat())) {
+    if (!caps->isFormatTexturable(backendTex.getBackendFormat(), backendTex.textureType())) {
         return nullptr;
     }
     if (backendTex.width() > caps->maxTextureSize() ||
@@ -287,7 +313,7 @@ sk_sp<GrTexture> GrGpu::wrapCompressedBackendTexture(const GrBackendTexture& bac
     const GrCaps* caps = this->caps();
     SkASSERT(caps);
 
-    if (!caps->isFormatTexturable(backendTex.getBackendFormat())) {
+    if (!caps->isFormatTexturable(backendTex.getBackendFormat(), backendTex.textureType())) {
         return nullptr;
     }
     if (backendTex.width() > caps->maxTextureSize() ||
@@ -309,7 +335,7 @@ sk_sp<GrTexture> GrGpu::wrapRenderableBackendTexture(const GrBackendTexture& bac
 
     const GrCaps* caps = this->caps();
 
-    if (!caps->isFormatTexturable(backendTex.getBackendFormat()) ||
+    if (!caps->isFormatTexturable(backendTex.getBackendFormat(), backendTex.textureType()) ||
         !caps->isFormatRenderable(backendTex.getBackendFormat(), sampleCnt)) {
         return nullptr;
     }
@@ -380,21 +406,23 @@ bool GrGpu::copySurface(GrSurface* dst, GrSurface* src, const SkIRect& srcRect,
     return this->onCopySurface(dst, src, srcRect, dstPoint);
 }
 
-bool GrGpu::readPixels(GrSurface* surface, int left, int top, int width, int height,
-                       GrColorType surfaceColorType, GrColorType dstColorType, void* buffer,
+bool GrGpu::readPixels(GrSurface* surface,
+                       SkIRect rect,
+                       GrColorType surfaceColorType,
+                       GrColorType dstColorType,
+                       void* buffer,
                        size_t rowBytes) {
     TRACE_EVENT0("skia.gpu", TRACE_FUNC);
     SkASSERT(surface);
     SkASSERT(!surface->framebufferOnly());
-    SkASSERT(this->caps()->isFormatTexturable(surface->backendFormat()));
+    SkASSERT(this->caps()->areColorTypeAndFormatCompatible(surfaceColorType,
+                                                           surface->backendFormat()));
 
-    auto subRect = SkIRect::MakeXYWH(left, top, width, height);
-    auto bounds  = SkIRect::MakeWH(surface->width(), surface->height());
-    if (!bounds.contains(subRect)) {
+    if (!SkIRect::MakeSize(surface->dimensions()).contains(rect)) {
         return false;
     }
 
-    size_t minRowBytes = SkToSizeT(GrColorTypeBytesPerPixel(dstColorType) * width);
+    size_t minRowBytes = SkToSizeT(GrColorTypeBytesPerPixel(dstColorType) * rect.width());
     if (!this->caps()->readPixelsRowBytesSupport()) {
         if (rowBytes != minRowBytes) {
             return false;
@@ -410,16 +438,19 @@ bool GrGpu::readPixels(GrSurface* surface, int left, int top, int width, int hei
 
     this->handleDirtyContext();
 
-    return this->onReadPixels(surface, left, top, width, height, surfaceColorType, dstColorType,
-                              buffer, rowBytes);
+    return this->onReadPixels(surface, rect, surfaceColorType, dstColorType, buffer, rowBytes);
 }
 
-bool GrGpu::writePixels(GrSurface* surface, int left, int top, int width, int height,
-                        GrColorType surfaceColorType, GrColorType srcColorType,
-                        const GrMipLevel texels[], int mipLevelCount, bool prepForTexSampling) {
+bool GrGpu::writePixels(GrSurface* surface,
+                        SkIRect rect,
+                        GrColorType surfaceColorType,
+                        GrColorType srcColorType,
+                        const GrMipLevel texels[],
+                        int mipLevelCount,
+                        bool prepForTexSampling) {
     TRACE_EVENT0("skia.gpu", TRACE_FUNC);
     ATRACE_ANDROID_FRAMEWORK_ALWAYS("Texture upload(%u) %ix%i",
-                                    surface->uniqueID().asUInt(), width, height);
+                                    surface->uniqueID().asUInt(), rect.width(), rect.height());
     SkASSERT(surface);
     SkASSERT(!surface->framebufferOnly());
 
@@ -431,25 +462,26 @@ bool GrGpu::writePixels(GrSurface* surface, int left, int top, int width, int he
         return false;
     } else if (mipLevelCount == 1) {
         // We require that if we are not mipped, then the write region is contained in the surface
-        auto subRect = SkIRect::MakeXYWH(left, top, width, height);
-        auto bounds  = SkIRect::MakeWH(surface->width(), surface->height());
-        if (!bounds.contains(subRect)) {
+        if (!SkIRect::MakeSize(surface->dimensions()).contains(rect)) {
             return false;
         }
-    } else if (0 != left || 0 != top || width != surface->width() || height != surface->height()) {
+    } else if (rect != SkIRect::MakeSize(surface->dimensions())) {
         // We require that if the texels are mipped, than the write region is the entire surface
         return false;
     }
 
-    if (!validate_texel_levels({width, height}, srcColorType, texels, mipLevelCount,
-                               this->caps())) {
+    if (!validate_texel_levels(rect.size(), srcColorType, texels, mipLevelCount, this->caps())) {
         return false;
     }
 
     this->handleDirtyContext();
-    if (this->onWritePixels(surface, left, top, width, height, surfaceColorType, srcColorType,
-                            texels, mipLevelCount, prepForTexSampling)) {
-        SkIRect rect = SkIRect::MakeXYWH(left, top, width, height);
+    if (this->onWritePixels(surface,
+                            rect,
+                            surfaceColorType,
+                            srcColorType,
+                            texels,
+                            mipLevelCount,
+                            prepForTexSampling)) {
         this->didWriteToSurface(surface, kTopLeft_GrSurfaceOrigin, &rect, mipLevelCount);
         fStats.incTextureUploads();
         return true;
@@ -457,9 +489,13 @@ bool GrGpu::writePixels(GrSurface* surface, int left, int top, int width, int he
     return false;
 }
 
-bool GrGpu::transferPixelsTo(GrTexture* texture, int left, int top, int width, int height,
-                             GrColorType textureColorType, GrColorType bufferColorType,
-                             sk_sp<GrGpuBuffer> transferBuffer, size_t offset, size_t rowBytes) {
+bool GrGpu::transferPixelsTo(GrTexture* texture,
+                             SkIRect rect,
+                             GrColorType textureColorType,
+                             GrColorType bufferColorType,
+                             sk_sp<GrGpuBuffer> transferBuffer,
+                             size_t offset,
+                             size_t rowBytes) {
     TRACE_EVENT0("skia.gpu", TRACE_FUNC);
     SkASSERT(texture);
     SkASSERT(transferBuffer);
@@ -469,30 +505,32 @@ bool GrGpu::transferPixelsTo(GrTexture* texture, int left, int top, int width, i
     }
 
     // We require that the write region is contained in the texture
-    SkIRect subRect = SkIRect::MakeXYWH(left, top, width, height);
-    SkIRect bounds = SkIRect::MakeWH(texture->width(), texture->height());
-    if (!bounds.contains(subRect)) {
+    if (!SkIRect::MakeSize(texture->dimensions()).contains(rect)) {
         return false;
     }
 
     size_t bpp = GrColorTypeBytesPerPixel(bufferColorType);
     if (this->caps()->writePixelsRowBytesSupport()) {
-        if (rowBytes < SkToSizeT(bpp * width)) {
+        if (rowBytes < SkToSizeT(bpp*rect.width())) {
             return false;
         }
         if (rowBytes % bpp) {
             return false;
         }
     } else {
-        if (rowBytes != SkToSizeT(bpp * width)) {
+        if (rowBytes != SkToSizeT(bpp*rect.width())) {
             return false;
         }
     }
 
     this->handleDirtyContext();
-    if (this->onTransferPixelsTo(texture, left, top, width, height, textureColorType,
-                                 bufferColorType, std::move(transferBuffer), offset, rowBytes)) {
-        SkIRect rect = SkIRect::MakeXYWH(left, top, width, height);
+    if (this->onTransferPixelsTo(texture,
+                                 rect,
+                                 textureColorType,
+                                 bufferColorType,
+                                 std::move(transferBuffer),
+                                 offset,
+                                 rowBytes)) {
         this->didWriteToSurface(texture, kTopLeft_GrSurfaceOrigin, &rect);
         fStats.incTransfersToTexture();
 
@@ -501,13 +539,17 @@ bool GrGpu::transferPixelsTo(GrTexture* texture, int left, int top, int width, i
     return false;
 }
 
-bool GrGpu::transferPixelsFrom(GrSurface* surface, int left, int top, int width, int height,
-                               GrColorType surfaceColorType, GrColorType bufferColorType,
-                               sk_sp<GrGpuBuffer> transferBuffer, size_t offset) {
+bool GrGpu::transferPixelsFrom(GrSurface* surface,
+                               SkIRect rect,
+                               GrColorType surfaceColorType,
+                               GrColorType bufferColorType,
+                               sk_sp<GrGpuBuffer> transferBuffer,
+                               size_t offset) {
     TRACE_EVENT0("skia.gpu", TRACE_FUNC);
     SkASSERT(surface);
     SkASSERT(transferBuffer);
-    SkASSERT(this->caps()->isFormatTexturable(surface->backendFormat()));
+    SkASSERT(this->caps()->areColorTypeAndFormatCompatible(surfaceColorType,
+                                                           surface->backendFormat()));
 
 #ifdef SK_DEBUG
     auto supportedRead = this->caps()->supportedReadPixelsColorType(
@@ -517,15 +559,17 @@ bool GrGpu::transferPixelsFrom(GrSurface* surface, int left, int top, int width,
 #endif
 
     // We require that the write region is contained in the texture
-    SkIRect subRect = SkIRect::MakeXYWH(left, top, width, height);
-    SkIRect bounds = SkIRect::MakeWH(surface->width(), surface->height());
-    if (!bounds.contains(subRect)) {
+    if (!SkIRect::MakeSize(surface->dimensions()).contains(rect)) {
         return false;
     }
 
     this->handleDirtyContext();
-    if (this->onTransferPixelsFrom(surface, left, top, width, height, surfaceColorType,
-                                   bufferColorType, std::move(transferBuffer), offset)) {
+    if (this->onTransferPixelsFrom(surface,
+                                   rect,
+                                   surfaceColorType,
+                                   bufferColorType,
+                                   std::move(transferBuffer),
+                                   offset)) {
         fStats.incTransfersFromSurface();
         return true;
     }
@@ -572,21 +616,14 @@ void GrGpu::didWriteToSurface(GrSurface* surface, GrSurfaceOrigin origin, const 
     // Mark any MIP chain and resolve buffer as dirty if and only if there is a non-empty bounds.
     if (nullptr == bounds || !bounds->isEmpty()) {
         GrTexture* texture = surface->asTexture();
-        if (texture && 1 == mipLevels) {
-            texture->markMipmapsDirty();
+        if (texture) {
+            if (mipLevels == 1) {
+                texture->markMipmapsDirty();
+            } else {
+                texture->markMipmapsClean();
+            }
         }
     }
-}
-
-int GrGpu::findOrAssignSamplePatternKey(GrRenderTarget* renderTarget) {
-    SkASSERT(this->caps()->sampleLocationsSupport());
-    SkASSERT(renderTarget->numSamples() > 1 ||
-             (renderTarget->getStencilAttachment() &&
-              renderTarget->getStencilAttachment()->numSamples() > 1));
-
-    SkSTArray<16, SkPoint> sampleLocations;
-    this->querySampleLocations(renderTarget, &sampleLocations);
-    return fSamplePatternDictionary.findOrAssignSamplePatternKey(sampleLocations);
 }
 
 void GrGpu::executeFlushInfo(SkSpan<GrSurfaceProxy*> proxies,
@@ -600,11 +637,11 @@ void GrGpu::executeFlushInfo(SkSpan<GrSurfaceProxy*> proxies,
     std::unique_ptr<std::unique_ptr<GrSemaphore>[]> semaphores(
             new std::unique_ptr<GrSemaphore>[info.fNumSemaphores]);
     if (this->caps()->semaphoreSupport() && info.fNumSemaphores) {
-        for (int i = 0; i < info.fNumSemaphores; ++i) {
+        for (size_t i = 0; i < info.fNumSemaphores; ++i) {
             if (info.fSignalSemaphores[i].isInitialized()) {
                 semaphores[i] = resourceProvider->wrapBackendSemaphore(
                     info.fSignalSemaphores[i],
-                    GrResourceProvider::SemaphoreWrapType::kWillSignal,
+                    GrSemaphoreWrapType::kWillSignal,
                     kBorrow_GrWrapOwnership);
                 // If we failed to wrap the semaphore it means the client didn't give us a valid
                 // semaphore to begin with. Therefore, it is fine to not signal it.
@@ -632,13 +669,14 @@ void GrGpu::executeFlushInfo(SkSpan<GrSurfaceProxy*> proxies,
     // We currently don't support passing in new surface state for multiple proxies here. The only
     // time we have multiple proxies is if we are flushing a yuv SkImage which won't have state
     // updates anyways.
-    SkASSERT(!newState || proxies.count() == 1);
+    SkASSERT(!newState || proxies.size() == 1);
     SkASSERT(!newState || access == SkSurface::BackendSurfaceAccess::kNoAccess);
     this->prepareSurfacesForBackendAccessAndStateUpdates(proxies, access, newState);
 }
 
 GrOpsRenderPass* GrGpu::getOpsRenderPass(
         GrRenderTarget* renderTarget,
+        bool useMSAASurface,
         GrAttachment* stencil,
         GrSurfaceOrigin origin,
         const SkIRect& bounds,
@@ -649,8 +687,9 @@ GrOpsRenderPass* GrGpu::getOpsRenderPass(
 #if SK_HISTOGRAMS_ENABLED
     fCurrentSubmitRenderPassCount++;
 #endif
-    return this->onGetOpsRenderPass(renderTarget, stencil, origin, bounds, colorInfo, stencilInfo,
-                                    sampledProxies, renderPassXferBarriers);
+    fStats.incRenderPasses();
+    return this->onGetOpsRenderPass(renderTarget, useMSAASurface, stencil, origin, bounds,
+                                    colorInfo, stencilInfo, sampledProxies, renderPassXferBarriers);
 }
 
 bool GrGpu::submitToGpu(bool syncCpu) {
@@ -704,6 +743,8 @@ void GrGpu::callSubmittedProcs(bool success) {
 }
 
 #ifdef SK_ENABLE_DUMP_GPU
+#include "src/utils/SkJSONWriter.h"
+
 void GrGpu::dumpJSON(SkJSONWriter* writer) const {
     writer->beginObject();
 
@@ -722,7 +763,6 @@ void GrGpu::dumpJSON(SkJSONWriter* writer) const { }
 #if GR_GPU_STATS
 
 void GrGpu::Stats::dump(SkString* out) {
-    out->appendf("Render Target Binds: %d\n", fRenderTargetBinds);
     out->appendf("Textures Created: %d\n", fTextureCreates);
     out->appendf("Texture Uploads: %d\n", fTextureUploads);
     out->appendf("Transfers to Texture: %d\n", fTransfersToTexture);
@@ -733,6 +773,8 @@ void GrGpu::Stats::dump(SkString* out) {
     out->appendf("Number of Scratch Textures reused %d\n", fNumScratchTexturesReused);
     out->appendf("Number of Scratch MSAA Attachments reused %d\n",
                  fNumScratchMSAAAttachmentsReused);
+    out->appendf("Number of Render Passes: %d\n", fRenderPasses);
+    out->appendf("Reordered DAGs Over Budget: %d\n", fNumReorderedDAGsOverBudget);
 
     // enable this block to output CSV-style stats for program pre-compilation
 #if 0
@@ -751,64 +793,25 @@ void GrGpu::Stats::dump(SkString* out) {
 }
 
 void GrGpu::Stats::dumpKeyValuePairs(SkTArray<SkString>* keys, SkTArray<double>* values) {
-    keys->push_back(SkString("render_target_binds")); values->push_back(fRenderTargetBinds);
+    keys->push_back(SkString("render_passes"));
+    values->push_back(fRenderPasses);
+    keys->push_back(SkString("reordered_dags_over_budget"));
+    values->push_back(fNumReorderedDAGsOverBudget);
 }
 
 #endif // GR_GPU_STATS
 #endif // GR_TEST_UTILS
 
-bool GrGpu::MipMapsAreCorrect(SkISize dimensions,
-                              GrMipmapped mipmapped,
-                              const BackendTextureData* data) {
-    int numMipLevels = 1;
-    if (mipmapped == GrMipmapped::kYes) {
-        numMipLevels = SkMipmap::ComputeLevelCount(dimensions.width(), dimensions.height()) + 1;
-    }
-
-    if (!data || data->type() == BackendTextureData::Type::kColor) {
-        return true;
-    }
-
-    if (data->type() == BackendTextureData::Type::kCompressed) {
-        return false;  // This should be going through CompressedDataIsCorrect
-    }
-
-    SkASSERT(data->type() == BackendTextureData::Type::kPixmaps);
-
-    if (data->pixmap(0).dimensions() != dimensions) {
-        return false;
-    }
-
-    GrColorType colorType = data->pixmap(0).colorType();
-    for (int i = 1; i < numMipLevels; ++i) {
-        dimensions = {std::max(1, dimensions.width()/2), std::max(1, dimensions.height()/2)};
-        if (dimensions != data->pixmap(i).dimensions()) {
-            return false;
-        }
-        if (colorType != data->pixmap(i).colorType()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool GrGpu::CompressedDataIsCorrect(SkISize dimensions, SkImage::CompressionType compressionType,
-                                    GrMipmapped mipMapped, const BackendTextureData* data) {
-
-    if (!data || data->type() == BackendTextureData::Type::kColor) {
-        return true;
-    }
-
-    if (data->type() == BackendTextureData::Type::kPixmaps) {
-        return false;
-    }
-
-    SkASSERT(data->type() == BackendTextureData::Type::kCompressed);
-
-    size_t computedSize = SkCompressedDataSize(compressionType, dimensions,
-                                               nullptr, mipMapped == GrMipmapped::kYes);
-
-    return computedSize == data->compressedSize();
+bool GrGpu::CompressedDataIsCorrect(SkISize dimensions,
+                                    SkImage::CompressionType compressionType,
+                                    GrMipmapped mipMapped,
+                                    const void* data,
+                                    size_t length) {
+    size_t computedSize = SkCompressedDataSize(compressionType,
+                                               dimensions,
+                                               nullptr,
+                                               mipMapped == GrMipmapped::kYes);
+    return computedSize == length;
 }
 
 GrBackendTexture GrGpu::createBackendTexture(SkISize dimensions,
@@ -839,33 +842,18 @@ GrBackendTexture GrGpu::createBackendTexture(SkISize dimensions,
     return this->onCreateBackendTexture(dimensions, format, renderable, mipMapped, isProtected);
 }
 
-bool GrGpu::updateBackendTexture(const GrBackendTexture& backendTexture,
-                                 sk_sp<GrRefCntedCallback> finishedCallback,
-                                 const BackendTextureData* data) {
-    SkASSERT(data);
-    const GrCaps* caps = this->caps();
-
+bool GrGpu::clearBackendTexture(const GrBackendTexture& backendTexture,
+                                sk_sp<GrRefCntedCallback> finishedCallback,
+                                std::array<float, 4> color) {
     if (!backendTexture.isValid()) {
         return false;
-    }
-
-    if (data->type() == BackendTextureData::Type::kPixmaps) {
-        auto ct = data->pixmap(0).colorType();
-        if (!caps->areColorTypeAndFormatCompatible(ct, backendTexture.getBackendFormat())) {
-            return false;
-        }
     }
 
     if (backendTexture.hasMipmaps() && !this->caps()->mipmapSupport()) {
         return false;
     }
 
-    GrMipmapped mipmapped = backendTexture.hasMipmaps() ? GrMipmapped::kYes : GrMipmapped::kNo;
-    if (!MipMapsAreCorrect(backendTexture.dimensions(), mipmapped, data)) {
-        return false;
-    }
-
-    return this->onUpdateBackendTexture(backendTexture, std::move(finishedCallback), data);
+    return this->onClearBackendTexture(backendTexture, std::move(finishedCallback), color);
 }
 
 GrBackendTexture GrGpu::createCompressedBackendTexture(SkISize dimensions,
@@ -899,7 +887,8 @@ GrBackendTexture GrGpu::createCompressedBackendTexture(SkISize dimensions,
 
 bool GrGpu::updateCompressedBackendTexture(const GrBackendTexture& backendTexture,
                                            sk_sp<GrRefCntedCallback> finishedCallback,
-                                           const BackendTextureData* data) {
+                                           const void* data,
+                                           size_t length) {
     SkASSERT(data);
 
     if (!backendTexture.isValid()) {
@@ -920,10 +909,16 @@ bool GrGpu::updateCompressedBackendTexture(const GrBackendTexture& backendTextur
 
     GrMipmapped mipMapped = backendTexture.hasMipmaps() ? GrMipmapped::kYes : GrMipmapped::kNo;
 
-    if (!CompressedDataIsCorrect(backendTexture.dimensions(), compressionType, mipMapped, data)) {
+    if (!CompressedDataIsCorrect(backendTexture.dimensions(),
+                                 compressionType,
+                                 mipMapped,
+                                 data,
+                                 length)) {
         return false;
     }
 
-    return this->onUpdateCompressedBackendTexture(backendTexture, std::move(finishedCallback),
-                                                  data);
+    return this->onUpdateCompressedBackendTexture(backendTexture,
+                                                  std::move(finishedCallback),
+                                                  data,
+                                                  length);
 }

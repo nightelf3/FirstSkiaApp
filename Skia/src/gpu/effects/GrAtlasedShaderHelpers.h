@@ -11,11 +11,10 @@
 #include "src/gpu/GrDrawOpAtlas.h"
 #include "src/gpu/GrShaderCaps.h"
 #include "src/gpu/glsl/GrGLSLFragmentShaderBuilder.h"
-#include "src/gpu/glsl/GrGLSLPrimitiveProcessor.h"
 #include "src/gpu/glsl/GrGLSLVarying.h"
 #include "src/gpu/glsl/GrGLSLVertexGeoBuilder.h"
 
-static void append_index_uv_varyings(GrGLSLPrimitiveProcessor::EmitArgs& args,
+static void append_index_uv_varyings(GrGeometryProcessor::ProgramImpl::EmitArgs& args,
                                      int numTextureSamplers,
                                      const char* inTexCoordsName,
                                      const char* atlasDimensionsInvName,
@@ -76,9 +75,9 @@ static void append_index_uv_varyings(GrGLSLPrimitiveProcessor::EmitArgs& args,
     }
 }
 
-static void append_multitexture_lookup(GrGLSLPrimitiveProcessor::EmitArgs& args,
+static void append_multitexture_lookup(GrGeometryProcessor::ProgramImpl::EmitArgs& args,
                                        int numTextureSamplers,
-                                       const GrGLSLVarying &texIdx,
+                                       const GrGLSLVarying& texIdx,
                                        const char* coordName,
                                        const char* colorName) {
     SkASSERT(numTextureSamplers > 0);

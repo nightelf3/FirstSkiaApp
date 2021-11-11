@@ -17,7 +17,7 @@
 
 #define GL_CALL(X) GR_GL_CALL(fGpu->glInterface(), X)
 
-void GrGLOpsRenderPass::set(GrRenderTarget* rt, const SkIRect& contentBounds,
+void GrGLOpsRenderPass::set(GrRenderTarget* rt, bool useMSAASurface, const SkIRect& contentBounds,
                             GrSurfaceOrigin origin, const LoadAndStoreInfo& colorInfo,
                             const StencilLoadAndStoreInfo& stencilInfo) {
     SkASSERT(fGpu);
@@ -25,36 +25,74 @@ void GrGLOpsRenderPass::set(GrRenderTarget* rt, const SkIRect& contentBounds,
     SkASSERT(fGpu == rt->getContext()->priv().getGpu());
 
     this->INHERITED::set(rt, origin);
+    fUseMultisampleFBO = useMSAASurface;
     fContentBounds = contentBounds;
     fColorLoadAndStoreInfo = colorInfo;
     fStencilLoadAndStoreInfo = stencilInfo;
 }
 
+GrNativeRect GrGLOpsRenderPass::dmsaaLoadStoreBounds() const {
+    if (fGpu->glCaps().framebufferResolvesMustBeFullSize()) {
+        // If frambeffer resolves have to be full size, then resolve the entire render target during
+        // load and store both, even if we will be doing so with a draw. We do this because we will
+        // have no other choice than to do a full size resolve at the end of the render pass, so the
+        // full DMSAA attachment needs to have valid content.
+        return GrNativeRect::MakeRelativeTo(fOrigin, fRenderTarget->height(),
+                                            SkIRect::MakeSize(fRenderTarget->dimensions()));
+    } else {
+        return GrNativeRect::MakeRelativeTo(fOrigin, fRenderTarget->height(), fContentBounds);
+    }
+}
+
 void GrGLOpsRenderPass::onBegin() {
-    fGpu->beginCommandBuffer(fRenderTarget, fContentBounds, fOrigin, fColorLoadAndStoreInfo,
-                             fStencilLoadAndStoreInfo);
+    auto glRT = static_cast<GrGLRenderTarget*>(fRenderTarget);
+    if (fUseMultisampleFBO &&
+        fColorLoadAndStoreInfo.fLoadOp == GrLoadOp::kLoad &&
+        glRT->hasDynamicMSAAAttachment()) {
+        // Load the single sample fbo into the dmsaa attachment.
+        if (fGpu->glCaps().canResolveSingleToMSAA()) {
+            fGpu->resolveRenderFBOs(glRT, this->dmsaaLoadStoreBounds().asSkIRect(),
+                                    GrGLGpu::ResolveDirection::kSingleToMSAA);
+        } else {
+            fGpu->drawSingleIntoMSAAFBO(glRT, this->dmsaaLoadStoreBounds().asSkIRect());
+        }
+    }
+
+    fGpu->beginCommandBuffer(glRT, fUseMultisampleFBO, fContentBounds, fOrigin,
+                             fColorLoadAndStoreInfo, fStencilLoadAndStoreInfo);
 }
 
 void GrGLOpsRenderPass::onEnd() {
-    fGpu->endCommandBuffer(fRenderTarget, fColorLoadAndStoreInfo, fStencilLoadAndStoreInfo);
+    auto glRT = static_cast<GrGLRenderTarget*>(fRenderTarget);
+    fGpu->endCommandBuffer(glRT, fUseMultisampleFBO, fColorLoadAndStoreInfo,
+                           fStencilLoadAndStoreInfo);
+
+    if (fUseMultisampleFBO &&
+        fColorLoadAndStoreInfo.fStoreOp == GrStoreOp::kStore &&
+        glRT->hasDynamicMSAAAttachment()) {
+        // Blit the msaa attachment into the single sample fbo.
+        fGpu->resolveRenderFBOs(glRT, this->dmsaaLoadStoreBounds().asSkIRect(),
+                                GrGLGpu::ResolveDirection::kMSAAToSingle,
+                                true /*invalidateReadBufferAfterBlit*/);
+    }
 }
 
 bool GrGLOpsRenderPass::onBindPipeline(const GrProgramInfo& programInfo,
                                        const SkRect& drawBounds) {
     fPrimitiveType = programInfo.primitiveType();
-    return fGpu->flushGLState(fRenderTarget, programInfo);
+    return fGpu->flushGLState(fRenderTarget, fUseMultisampleFBO, programInfo);
 }
 
 void GrGLOpsRenderPass::onSetScissorRect(const SkIRect& scissor) {
     fGpu->flushScissorRect(scissor, fRenderTarget->height(), fOrigin);
 }
 
-bool GrGLOpsRenderPass::onBindTextures(const GrPrimitiveProcessor& primProc,
-                                       const GrSurfaceProxy* const primProcTextures[],
+bool GrGLOpsRenderPass::onBindTextures(const GrGeometryProcessor& geomProc,
+                                       const GrSurfaceProxy* const geomProcTextures[],
                                        const GrPipeline& pipeline) {
     GrGLProgram* program = fGpu->currentProgram();
     SkASSERT(program);
-    program->bindTextures(primProc, primProcTextures, pipeline);
+    program->bindTextures(geomProc, geomProcTextures, pipeline);
     return true;
 }
 
@@ -384,9 +422,9 @@ void GrGLOpsRenderPass::multiDrawElementsANGLEOrWebGL(const GrBuffer* drawIndire
 }
 
 void GrGLOpsRenderPass::onClear(const GrScissorState& scissor, std::array<float, 4> color) {
-    fGpu->clear(scissor, color, fRenderTarget, fOrigin);
+    fGpu->clear(scissor, color, fRenderTarget, fUseMultisampleFBO, fOrigin);
 }
 
 void GrGLOpsRenderPass::onClearStencilClip(const GrScissorState& scissor, bool insideStencilMask) {
-    fGpu->clearStencilClip(scissor, insideStencilMask, fRenderTarget, fOrigin);
+    fGpu->clearStencilClip(scissor, insideStencilMask, fRenderTarget, fUseMultisampleFBO, fOrigin);
 }

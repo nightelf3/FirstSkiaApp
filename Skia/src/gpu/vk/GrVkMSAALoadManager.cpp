@@ -10,6 +10,7 @@
 #include "include/gpu/GrDirectContext.h"
 #include "src/core/SkTraceEvent.h"
 #include "src/gpu/GrDirectContextPriv.h"
+#include "src/gpu/GrResourceProvider.h"
 #include "src/gpu/vk/GrVkBuffer.h"
 #include "src/gpu/vk/GrVkCommandBuffer.h"
 #include "src/gpu/vk/GrVkDescriptorSet.h"
@@ -32,9 +33,6 @@ bool GrVkMSAALoadManager::createMSAALoadProgram(GrVkGpu* gpu) {
 
     SkSL::String vertShaderText;
     vertShaderText.append(
-            "#extension GL_ARB_separate_shader_objects : enable\n"
-            "#extension GL_ARB_shading_language_420pack : enable\n"
-
             "layout(set = 0, binding = 0) uniform vertexUniformBuffer {"
             "half4 uPosXform;"
             "};"
@@ -48,9 +46,6 @@ bool GrVkMSAALoadManager::createMSAALoadProgram(GrVkGpu* gpu) {
 
     SkSL::String fragShaderText;
     fragShaderText.append(
-            "#extension GL_ARB_separate_shader_objects : enable\n"
-            "#extension GL_ARB_shading_language_420pack : enable\n"
-
             "layout(input_attachment_index = 0, set = 2, binding = 0) uniform subpassInput uInput;"
 
             "// MSAA Load Program FS\n"
@@ -67,7 +62,7 @@ bool GrVkMSAALoadManager::createMSAALoadProgram(GrVkGpu* gpu) {
         this->destroyResources(gpu);
         return false;
     }
-    SkASSERT(inputs.isEmpty());
+    SkASSERT(inputs == SkSL::Program::Inputs());
 
     if (!GrCompileVkShaderModule(gpu, fragShaderText, VK_SHADER_STAGE_FRAGMENT_BIT,
                                  &fFragShaderModule, &fShaderStageInfo[1], settings, &spirv,
@@ -75,7 +70,7 @@ bool GrVkMSAALoadManager::createMSAALoadProgram(GrVkGpu* gpu) {
         this->destroyResources(gpu);
         return false;
     }
-    SkASSERT(inputs.isEmpty());
+    SkASSERT(inputs == SkSL::Program::Inputs());
 
     VkDescriptorSetLayout dsLayout[GrVkUniformHandler::kDescSetCount];
 
@@ -121,21 +116,13 @@ bool GrVkMSAALoadManager::createMSAALoadProgram(GrVkGpu* gpu) {
 bool GrVkMSAALoadManager::loadMSAAFromResolve(GrVkGpu* gpu,
                                               GrVkCommandBuffer* commandBuffer,
                                               const GrVkRenderPass& renderPass,
-                                              GrSurface* dst,
-                                              GrSurface* src,
+                                              GrAttachment* dst,
+                                              GrVkImage* src,
                                               const SkIRect& rect) {
-    GrVkRenderTarget* dstRt = static_cast<GrVkRenderTarget*>(dst->asRenderTarget());
-    if (!dstRt) {
+    if (!dst) {
         return false;
     }
-
-    GrVkRenderTarget* srcRT = static_cast<GrVkRenderTarget*>(src->asRenderTarget());
-    if (!srcRT) {
-        return false;
-    }
-
-    if (!srcRT->resolveAttachment() ||
-        !srcRT->resolveAttachment()->supportsInputAttachmentUsage()) {
+    if (!src || !src->supportsInputAttachmentUsage()) {
         return false;
     }
 
@@ -151,8 +138,8 @@ bool GrVkMSAALoadManager::loadMSAAFromResolve(GrVkGpu* gpu,
     GrVkResourceProvider& resourceProv = gpu->resourceProvider();
 
     sk_sp<const GrVkPipeline> pipeline =
-            resourceProv.findOrCreateMSAALoadPipeline(renderPass, dstRt, fShaderStageInfo,
-                                                      fPipelineLayout);
+            resourceProv.findOrCreateMSAALoadPipeline(renderPass, dst->numSamples(),
+                                                      fShaderStageInfo, fPipelineLayout);
     if (!pipeline) {
         return false;
     }
@@ -209,7 +196,7 @@ bool GrVkMSAALoadManager::loadMSAAFromResolve(GrVkGpu* gpu,
     commandBuffer->addGrBuffer(std::move(uniformBuffer));
 
     // Update the input descriptor set
-    const GrVkDescriptorSet* inputDS = srcRT->inputDescSet(gpu, /*forResolve=*/true);
+    gr_rp<const GrVkDescriptorSet> inputDS = src->inputDescSetForMSAALoad(gpu);
     if (!inputDS) {
         return false;
     }
@@ -220,7 +207,7 @@ bool GrVkMSAALoadManager::loadMSAAFromResolve(GrVkGpu* gpu,
 
     // We don't need to add the src and dst resources here since those are all tracked by the main
     // render pass code out in GrVkOpsRenderPass and GrVkRenderTarget::adResources.
-    commandBuffer->addRecycledResource(inputDS);
+    commandBuffer->addRecycledResource(std::move(inputDS));
 
     commandBuffer->draw(gpu, 4, 1, 0, 0);
 

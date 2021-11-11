@@ -13,10 +13,10 @@
 #include <type_traits>
 #include <utility>
 
+#include "include/core/SkSpan.h"
 #include "include/core/SkTypes.h"
 #include "include/private/SkTemplates.h"
 #include "include/private/SkTo.h"
-#include "src/core/SkSpan.h"
 
 // Take a list of things that can be pointers, and use them all in parallel. The iterators and
 // accessor operator[] for the class produce a tuple of the items.
@@ -48,7 +48,7 @@ class SkZip {
     };
 
     template<typename T>
-    static constexpr T* nullify = nullptr;
+    inline static constexpr T* nullify = nullptr;
 
 public:
     constexpr SkZip() : fPointers{nullify<Ts>...}, fSize{0} {}
@@ -57,6 +57,7 @@ public:
             : fPointers{ts...}
             , fSize{size} {}
     constexpr SkZip(const SkZip& that) = default;
+    constexpr SkZip& operator=(const SkZip &that) = default;
 
     // Check to see if U can be used for const T or is the same as T
     template <typename U, typename T>
@@ -78,7 +79,7 @@ public:
     constexpr Iterator begin() const { return Iterator{this, 0}; }
     constexpr Iterator end() const { return Iterator{this, this->size()}; }
     template<size_t I> constexpr auto get() const {
-        return SkSpan(std::get<I>(fPointers), fSize);
+        return SkMakeSpan(std::get<I>(fPointers), fSize);
     }
     constexpr std::tuple<Ts*...> data() const { return fPointers; }
     constexpr SkZip first(size_t n) const {
@@ -202,10 +203,6 @@ public:
         return SkZip<ValueType<Ts>...>{size, Span<Ts>::Data(std::forward<Ts>(ts))...};
     }
 };
-
-template<typename... Ts>
-template<typename T>
-constexpr T* SkZip<Ts...>::nullify;
 
 template<typename... Ts>
 inline constexpr auto SkMakeZip(Ts&& ... ts) {

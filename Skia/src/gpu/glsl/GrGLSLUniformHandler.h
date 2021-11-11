@@ -23,11 +23,10 @@ class GrSurfaceProxy;
 // Handles for program uniforms (other than per-effect uniforms)
 struct GrGLSLBuiltinUniformHandles {
     GrGLSLProgramDataManager::UniformHandle fRTAdjustmentUni;
-    // Render target width, used to implement sk_Width
-    GrGLSLProgramDataManager::UniformHandle fRTWidthUni;
-    // Render target height, used to implement sk_Height and to calculate sk_FragCoord when
-    // origin_upper_left is not supported.
-    GrGLSLProgramDataManager::UniformHandle fRTHeightUni;
+    // Render target flip uniform (used for dFdy, sk_Clockwise, and sk_FragCoord)
+    GrGLSLProgramDataManager::UniformHandle fRTFlipUni;
+    // Destination texture origin and scale, used when dest-texture readback is enabled.
+    GrGLSLProgramDataManager::UniformHandle fDstTextureCoordsUni;
 };
 
 class GrGLSLUniformHandler {
@@ -93,14 +92,6 @@ public:
     GrShaderVar liftUniformToVertexShader(const GrFragmentProcessor& owner, SkString rawName);
 
 protected:
-    struct UniformMapping {
-        const GrFragmentProcessor* fOwner;
-        int fInfoIndex;
-        SkString fRawName;
-        const char* fFinalName;
-        GrSLType fType;
-    };
-
     explicit GrGLSLUniformHandler(GrGLSLProgramBuilder* program) : fProgramBuilder(program) {}
 
     // This is not owned by the class

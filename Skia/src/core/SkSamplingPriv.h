@@ -13,6 +13,23 @@
 class SkReadBuffer;
 class SkWriteBuffer;
 
+// Private copy of SkFilterQuality, just for legacy deserialization
+// Matches values in SkFilterQuality
+enum SkLegacyFQ {
+    kNone_SkLegacyFQ   = 0,    //!< nearest-neighbor; fastest but lowest quality
+    kLow_SkLegacyFQ    = 1,    //!< bilerp
+    kMedium_SkLegacyFQ = 2,    //!< bilerp + mipmaps; good for down-scaling
+    kHigh_SkLegacyFQ   = 3,    //!< bicubic resampling; slowest but good quality
+
+    kLast_SkLegacyFQ = kHigh_SkLegacyFQ,
+};
+
+// Matches values in SkSamplingOptions::MediumBehavior
+enum SkMediumAs {
+    kNearest_SkMediumAs,
+    kLinear_SkMediumAs,
+};
+
 class SkSamplingPriv {
 public:
     enum {
@@ -21,19 +38,15 @@ public:
 
     // Returns true if the sampling can be ignored when the CTM is identity.
     static bool NoChangeWithIdentityMatrix(const SkSamplingOptions& sampling) {
-    #ifdef SK_SUPPORT_LEGACY_SPRITE_IGNORE_HQ
-        // Legacy behavior is to ignore sampling if there is identity matrix, even with cubic
-        // reampling.
-        return true;
-    #else
         // If B == 0, the cubic resampler should have no effect for identity matrices
         // https://entropymine.com/imageworsener/bicubic/
         return !sampling.useCubic || sampling.cubic.B == 0;
-    #endif
     }
 
     static SkSamplingOptions Read(SkReadBuffer&);
     static void Write(SkWriteBuffer&, const SkSamplingOptions&);
+
+    static SkSamplingOptions FromFQ(SkLegacyFQ, SkMediumAs = kNearest_SkMediumAs);
 };
 
 #endif

@@ -10,10 +10,10 @@
 #include "src/core/SkMathPriv.h"
 #include "src/gpu/GrCaps.h"
 #include "src/gpu/GrGpuResourcePriv.h"
-#include "src/gpu/GrOpsTask.h"
 #include "src/gpu/GrRenderTarget.h"
 #include "src/gpu/GrResourceProvider.h"
 #include "src/gpu/GrSurface.h"
+#include "src/gpu/GrSurfaceProxyPriv.h"
 #include "src/gpu/GrTextureRenderTargetProxy.h"
 
 #ifdef SK_DEBUG
@@ -89,13 +89,31 @@ bool GrRenderTargetProxy::instantiate(GrResourceProvider* resourceProvider) {
     return true;
 }
 
-bool GrRenderTargetProxy::canChangeStencilAttachment() const {
-    if (!fTarget) {
-        // If we aren't instantiated, then we definitely are an internal render target. Ganesh is
-        // free to change stencil attachments on internal render targets.
-        return true;
+bool GrRenderTargetProxy::canUseStencil(const GrCaps& caps) const {
+    if (caps.avoidStencilBuffers() || this->wrapsVkSecondaryCB()) {
+        return false;
     }
-    return fTarget->asRenderTarget()->canAttemptStencilAttachment();
+    if (!this->isInstantiated()) {
+        if (this->isLazy() && this->backendFormat().backend() == GrBackendApi::kOpenGL) {
+            // It's possible for wrapped GL render targets to not have stencil. We don't currently
+            // have an exact way of knowing whether the target will be able to use stencil, so we do
+            // the best we can: if a lazy GL proxy doesn't have a texture, then it might be a
+            // wrapped target without stencil, so we conservatively block stencil.
+            // FIXME: skbug.com/11943: SkSurfaceCharacterization needs a "canUseStencil" flag.
+            return SkToBool(this->asTextureProxy());
+        } else {
+            // Otherwise the target will definitely not be wrapped. Ganesh is free to attach
+            // stencils on internal render targets.
+            return true;
+        }
+    }
+    // Just ask the actual target if we can use stencil.
+    GrRenderTarget* rt = this->peekRenderTarget();
+    // The dmsaa attachment (if any) always supports stencil. The real question is whether the
+    // non-dmsaa attachment supports stencil.
+    bool useMSAASurface = rt->numSamples() > 1;
+    return rt->getStencilAttachment(useMSAASurface) ||
+           rt->canAttemptStencilAttachment(useMSAASurface);
 }
 
 sk_sp<GrSurface> GrRenderTargetProxy::createSurface(GrResourceProvider* resourceProvider) const {
@@ -141,6 +159,7 @@ GrSurfaceProxy::LazySurfaceDesc GrRenderTargetProxy::callbackDesc() const {
             GrMipmapped::kNo,
             this->numSamples(),
             this->backendFormat(),
+            GrTextureType::kNone,
             this->isProtected(),
             this->isBudgeted(),
     };

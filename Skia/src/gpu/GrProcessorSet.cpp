@@ -115,8 +115,7 @@ bool GrProcessorSet::operator==(const GrProcessorSet& that) const {
 GrProcessorSet::Analysis GrProcessorSet::finalize(
         const GrProcessorAnalysisColor& colorInput, const GrProcessorAnalysisCoverage coverageInput,
         const GrAppliedClip* clip, const GrUserStencilSettings* userStencil,
-        bool hasMixedSampledCoverage, const GrCaps& caps, GrClampType clampType,
-        SkPMColor4f* overrideInputColor) {
+        const GrCaps& caps, GrClampType clampType, SkPMColor4f* overrideInputColor) {
     SkASSERT(!this->isFinalized());
 
     GrProcessorSet::Analysis analysis;
@@ -130,13 +129,13 @@ GrProcessorSet::Analysis GrProcessorSet::finalize(
         if (!fCoverageFragmentProcessor->compatibleWithCoverageAsAlpha()) {
             analysis.fCompatibleWithCoverageAsAlpha = false;
         }
-        coverageUsesLocalCoords |= fCoverageFragmentProcessor->usesVaryingCoords();
+        coverageUsesLocalCoords |= fCoverageFragmentProcessor->usesSampleCoords();
     }
     if (clip && clip->hasCoverageFragmentProcessor()) {
         hasCoverageFP = true;
         const GrFragmentProcessor* clipFP = clip->coverageFragmentProcessor();
         analysis.fCompatibleWithCoverageAsAlpha &= clipFP->compatibleWithCoverageAsAlpha();
-        coverageUsesLocalCoords |= clipFP->usesVaryingCoords();
+        coverageUsesLocalCoords |= clipFP->usesSampleCoords();
     }
     int colorFPsToEliminate = colorAnalysis.initialProcessorsToEliminate(overrideInputColor);
     analysis.fInputColorType = static_cast<Analysis::PackedInputColorType>(
@@ -153,14 +152,14 @@ GrProcessorSet::Analysis GrProcessorSet::finalize(
     }
 
     GrXPFactory::AnalysisProperties props = GrXPFactory::GetAnalysisProperties(
-            this->xpFactory(), colorAnalysis.outputColor(), outputCoverage, hasMixedSampledCoverage,
-            caps, clampType);
-    analysis.fRequiresDstTexture =
-            SkToBool(props & GrXPFactory::AnalysisProperties::kRequiresDstTexture);
+            this->xpFactory(), colorAnalysis.outputColor(), outputCoverage, caps, clampType);
+    analysis.fRequiresDstTexture = (props & GrXPFactory::AnalysisProperties::kRequiresDstTexture) ||
+                                   colorAnalysis.requiresDstTexture(caps);
     analysis.fCompatibleWithCoverageAsAlpha &=
             SkToBool(props & GrXPFactory::AnalysisProperties::kCompatibleWithCoverageAsAlpha);
     analysis.fRequiresNonOverlappingDraws =
-            SkToBool(props & GrXPFactory::AnalysisProperties::kRequiresNonOverlappingDraws);
+            (props & GrXPFactory::AnalysisProperties::kRequiresNonOverlappingDraws) ||
+            analysis.fRequiresDstTexture;
     analysis.fUsesNonCoherentHWBlending =
             SkToBool(props & GrXPFactory::AnalysisProperties::kUsesNonCoherentHWBlending);
     analysis.fUnaffectedByDstValue =
@@ -173,7 +172,7 @@ GrProcessorSet::Analysis GrProcessorSet::finalize(
     } else {
         analysis.fCompatibleWithCoverageAsAlpha &=
             colorAnalysis.allProcessorsCompatibleWithCoverageAsAlpha();
-        analysis.fUsesLocalCoords = coverageUsesLocalCoords | colorAnalysis.usesLocalCoords();
+        analysis.fUsesLocalCoords = coverageUsesLocalCoords || colorAnalysis.usesLocalCoords();
     }
     if (colorFPsToEliminate) {
         SkASSERT(colorFPsToEliminate == 1);
@@ -182,8 +181,7 @@ GrProcessorSet::Analysis GrProcessorSet::finalize(
     analysis.fHasColorFragmentProcessor = this->hasColorFragmentProcessor();
 
     auto xp = GrXPFactory::MakeXferProcessor(this->xpFactory(), colorAnalysis.outputColor(),
-                                             outputCoverage, hasMixedSampledCoverage, caps,
-                                             clampType);
+                                             outputCoverage, caps, clampType);
     fXP.fProcessor = xp.release();
 
     fFlags |= kFinalized_Flag;
@@ -198,7 +196,7 @@ GrProcessorSet::Analysis GrProcessorSet::finalize(
     return analysis;
 }
 
-void GrProcessorSet::visitProxies(const GrOp::VisitProxyFunc& func) const {
+void GrProcessorSet::visitProxies(const GrVisitProxyFunc& func) const {
     if (this->hasColorFragmentProcessor()) {
         fColorFragmentProcessor->visitProxies(func);
     }

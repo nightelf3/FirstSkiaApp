@@ -59,7 +59,7 @@
 //make it clear when converting a scalar that this is what is wanted.
 #define SkScalarToFLOAT(n) SkScalarToFloat(n)
 
-//Dummy representation of a GUID from createId.
+//Placeholder representation of a GUID from createId.
 #define L_GUID_ID L"XXXXXXXXsXXXXsXXXXsXXXXsXXXXXXXXXXXX"
 //Length of GUID representation from createId, including nullptr terminator.
 #define GUID_ID_LEN SK_ARRAY_COUNT(L_GUID_ID)
@@ -1892,9 +1892,9 @@ static bool text_must_be_pathed(const SkPaint& paint, const SkMatrix& matrix) {
     ;
 }
 
-void SkXPSDevice::drawGlyphRunList(const SkGlyphRunList& glyphRunList) {
+void SkXPSDevice::onDrawGlyphRunList(const SkGlyphRunList& glyphRunList, const SkPaint& paint) {
+    SkASSERT(!glyphRunList.hasRSXForm());
 
-    const SkPaint& paint = glyphRunList.paint();
     for (const auto& run : glyphRunList) {
         const SkGlyphID* glyphIDs = run.glyphsIDs().data();
         size_t glyphCount = run.glyphsIDs().size();

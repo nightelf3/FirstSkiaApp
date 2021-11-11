@@ -59,9 +59,8 @@ public:
     void deleteTestingOnlyBackendRenderTarget(const GrBackendRenderTarget&) override;
 #endif
 
-    sk_sp<GrAttachment> makeStencilAttachmentForRenderTarget(const GrRenderTarget*,
-                                                             SkISize dimensions,
-                                                             int numStencilSamples) override;
+    sk_sp<GrAttachment> makeStencilAttachment(const GrBackendFormat& /*colorFormat*/,
+                                              SkISize dimensions, int numStencilSamples) override;
 
     GrBackendFormat getPreferredStencilFormat(const GrBackendFormat&) override {
         return GrBackendFormat::MakeDawn(wgpu::TextureFormat::Depth24PlusStencil8);
@@ -70,7 +69,8 @@ public:
     sk_sp<GrAttachment> makeMSAAAttachment(SkISize dimensions,
                                            const GrBackendFormat& format,
                                            int numSamples,
-                                           GrProtected isProtected) override {
+                                           GrProtected isProtected,
+                                           GrMemoryless isMemoryless) override {
         return nullptr;
     }
 
@@ -81,10 +81,9 @@ public:
     void deleteFence(GrFence) const override;
 
     std::unique_ptr<GrSemaphore> SK_WARN_UNUSED_RESULT makeSemaphore(bool isOwned = true) override;
-    std::unique_ptr<GrSemaphore> wrapBackendSemaphore(
-            const GrBackendSemaphore& semaphore,
-            GrResourceProvider::SemaphoreWrapType wrapType,
-            GrWrapOwnership ownership) override;
+    std::unique_ptr<GrSemaphore> wrapBackendSemaphore(const GrBackendSemaphore&,
+                                                      GrSemaphoreWrapType,
+                                                      GrWrapOwnership) override;
     void insertSemaphore(GrSemaphore* semaphore) override;
     void waitSemaphore(GrSemaphore* semaphore) override;
     void checkFinishProcs() override;
@@ -102,14 +101,14 @@ public:
     void appendCommandBuffer(wgpu::CommandBuffer commandBuffer);
 
     void waitOnAllBusyStagingBuffers();
-    SkSL::String SkSLToSPIRV(const char* shaderString, SkSL::ProgramKind, bool flipY,
-                             uint32_t rtHeightOffset, SkSL::Program::Inputs*);
+    SkSL::String SkSLToSPIRV(const char* shaderString,
+                             SkSL::ProgramKind,
+                             uint32_t rtFlipOffset,
+                             SkSL::Program::Inputs*);
     wgpu::ShaderModule createShaderModule(const SkSL::String& spirvSource);
 
 private:
     GrDawnGpu(GrDirectContext*, const GrContextOptions&, const wgpu::Device&);
-
-    virtual void querySampleLocations(GrRenderTarget*, SkTArray<SkPoint>*) override {}
 
     sk_sp<GrTexture> onCreateTexture(SkISize,
                                      const GrBackendFormat&,
@@ -146,9 +145,9 @@ private:
                                             GrMipmapped,
                                             GrProtected) override;
 
-    bool onUpdateBackendTexture(const GrBackendTexture&,
-                                sk_sp<GrRefCntedCallback> finishedCallback,
-                                const BackendTextureData*) override;
+    bool onClearBackendTexture(const GrBackendTexture&,
+                               sk_sp<GrRefCntedCallback> finishedCallback,
+                               std::array<float, 4> color) override;
 
     GrBackendTexture onCreateCompressedBackendTexture(SkISize dimensions,
                                                       const GrBackendFormat&,
@@ -157,28 +156,41 @@ private:
 
     bool onUpdateCompressedBackendTexture(const GrBackendTexture&,
                                           sk_sp<GrRefCntedCallback> finishedCallback,
-                                          const BackendTextureData*) override;
+                                          const void* data,
+                                          size_t size) override;
 
     sk_sp<GrGpuBuffer> onCreateBuffer(size_t size, GrGpuBufferType type, GrAccessPattern,
                                       const void* data) override;
 
-    bool onReadPixels(GrSurface* surface, int left, int top, int width, int height,
-                      GrColorType surfaceColorType, GrColorType dstColorType, void* buffer,
+    bool onReadPixels(GrSurface*,
+                      SkIRect,
+                      GrColorType surfaceColorType,
+                      GrColorType dstColorType,
+                      void*,
                       size_t rowBytes) override;
 
-    bool onWritePixels(GrSurface* surface, int left, int top, int width, int height,
-                       GrColorType surfaceColorType, GrColorType srcColorType,
-                       const GrMipLevel texels[], int mipLevelCount,
-                       bool prepForTexSampling) override;
+    bool onWritePixels(GrSurface*,
+                       SkIRect,
+                       GrColorType surfaceColorType,
+                       GrColorType srcColorType,
+                       const GrMipLevel[],
+                       int mipLevelCount,
+                       bool) override;
 
-    bool onTransferPixelsTo(GrTexture*, int left, int top, int width, int height,
-                            GrColorType textureColorType, GrColorType bufferColorType,
-                            sk_sp<GrGpuBuffer> transferBuffer, size_t offset,
+    bool onTransferPixelsTo(GrTexture*,
+                            SkIRect,
+                            GrColorType textureColorType,
+                            GrColorType bufferColorType,
+                            sk_sp<GrGpuBuffer>,
+                            size_t offset,
                             size_t rowBytes) override;
 
-    bool onTransferPixelsFrom(GrSurface* surface, int left, int top, int width, int height,
-                              GrColorType surfaceColorType, GrColorType bufferColorType,
-                              sk_sp<GrGpuBuffer> transferBuffer, size_t offset) override;
+    bool onTransferPixelsFrom(GrSurface*,
+                              SkIRect,
+                              GrColorType surfaceColorType,
+                              GrColorType bufferColorType,
+                              sk_sp<GrGpuBuffer>,
+                              size_t offset) override;
 
     void onResolveRenderTarget(GrRenderTarget*, const SkIRect&) override {}
 
@@ -191,6 +203,7 @@ private:
                          GrGpuFinishedContext finishedContext) override;
 
     GrOpsRenderPass* onGetOpsRenderPass(GrRenderTarget*,
+                                        bool useMSAASurface,
                                         GrAttachment*,
                                         GrSurfaceOrigin,
                                         const SkIRect&,

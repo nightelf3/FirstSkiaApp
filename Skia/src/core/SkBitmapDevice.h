@@ -94,10 +94,9 @@ protected:
                        const SkSamplingOptions&, const SkPaint&,
                        SkCanvas::SrcRectConstraint) override;
 
-    void drawGlyphRunList(const SkGlyphRunList& glyphRunList) override;
     void drawVertices(const SkVertices*, SkBlendMode, const SkPaint&) override;
-    void drawAtlas(const SkImage*, const SkRSXform[], const SkRect[], const SkColor[], int count,
-                   SkBlendMode, const SkSamplingOptions&, const SkPaint&) override;
+    void drawAtlas(const SkRSXform[], const SkRect[], const SkColor[], int count, SkBlendMode,
+                   const SkPaint&) override;
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -112,6 +111,7 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////////
 
+    void onDrawGlyphRunList(const SkGlyphRunList& glyphRunList, const SkPaint& paint) override;
     bool onReadPixels(const SkPixmap&, int x, int y) override;
     bool onWritePixels(const SkPixmap&, int, int) override;
     bool onPeekPixels(SkPixmap*) override;
@@ -125,7 +125,6 @@ protected:
     void onClipShader(sk_sp<SkShader>) override;
     void onClipRegion(const SkRegion& deviceRgn, SkClipOp) override;
     void onReplaceClip(const SkIRect& rect) override;
-    void onSetDeviceClipRestriction(SkIRect* mutableClipRestriction) override;
     bool onClipIsAA() const override;
     bool onClipIsWideOpen() const override;
     void onAsRgnClip(SkRegion*) const override;

@@ -16,6 +16,7 @@
 
 namespace SkSL {
 
+class AnyConstructor;
 class Expression;
 class IRGenerator;
 class Variable;
@@ -27,20 +28,28 @@ class Expression : public IRNode {
 public:
     enum class Kind {
         kBinary = (int) Statement::Kind::kLast + 1,
-        kBoolLiteral,
+        kChildCall,
         kCodeString,
-        kConstructor,
-        kDefined,
+        kConstructorArray,
+        kConstructorArrayCast,
+        kConstructorCompound,
+        kConstructorCompoundCast,
+        kConstructorDiagonalMatrix,
+        kConstructorMatrixResize,
+        kConstructorScalarCast,
+        kConstructorSplat,
+        kConstructorStruct,
         kExternalFunctionCall,
         kExternalFunctionReference,
-        kIntLiteral,
         kFieldAccess,
-        kFloatLiteral,
         kFunctionReference,
         kFunctionCall,
         kIndex,
-        kPrefix,
+        kLiteral,
+        kMethodReference,
+        kPoison,
         kPostfix,
+        kPrefix,
         kSetting,
         kSwizzle,
         kTernary,
@@ -56,8 +65,8 @@ public:
         kContainsRTAdjust
     };
 
-    Expression(int offset, Kind kind, const Type* type)
-        : INHERITED(offset, (int) kind)
+    Expression(int line, Kind kind, const Type* type)
+        : INHERITED(line, (int) kind)
         , fType(type) {
         SkASSERT(kind >= Kind::kFirst && kind <= Kind::kLast);
     }
@@ -72,15 +81,33 @@ public:
 
     /**
      *  Use is<T> to check the type of an expression.
-     *  e.g. replace `e.kind() == Expression::Kind::kIntLiteral` with `e.is<IntLiteral>()`.
+     *  e.g. replace `e.kind() == Expression::Kind::kLiteral` with `e.is<Literal>()`.
      */
     template <typename T>
     bool is() const {
         return this->kind() == T::kExpressionKind;
     }
 
+    bool isAnyConstructor() const {
+        static_assert((int)Kind::kConstructorArray - 1 == (int)Kind::kCodeString);
+        static_assert((int)Kind::kConstructorStruct + 1 == (int)Kind::kExternalFunctionCall);
+        return this->kind() >= Kind::kConstructorArray && this->kind() <= Kind::kConstructorStruct;
+    }
+
+    bool isIntLiteral() const {
+        return this->kind() == Kind::kLiteral && this->type().isInteger();
+    }
+
+    bool isFloatLiteral() const {
+        return this->kind() == Kind::kLiteral && this->type().isFloat();
+    }
+
+    bool isBoolLiteral() const {
+        return this->kind() == Kind::kLiteral && this->type().isBoolean();
+    }
+
     /**
-     *  Use as<T> to downcast expressions: e.g. replace `(IntLiteral&) i` with `i.as<IntLiteral>()`.
+     *  Use as<T> to downcast expressions: e.g. replace `(Literal&) i` with `i.as<Literal>()`.
      */
     template <typename T>
     const T& as() const {
@@ -94,6 +121,9 @@ public:
         return static_cast<T&>(*this);
     }
 
+    AnyConstructor& asAnyConstructor();
+    const AnyConstructor& asAnyConstructor() const;
+
     /**
      * Returns true if this expression is constant. compareConstant must be implemented for all
      * constants!
@@ -101,6 +131,13 @@ public:
     virtual bool isCompileTimeConstant() const {
         return false;
     }
+
+    /**
+     * Returns true if this expression is incomplete. Specifically, dangling function/method-call
+     * references that were never invoked, or type references that were never constructed, are
+     * considered incomplete expressions and should result in an error.
+     */
+    bool isIncomplete(const Context& context) const;
 
     /**
      * Compares this constant expression against another constant expression. Returns kUnknown if
@@ -114,30 +151,6 @@ public:
     };
     virtual ComparisonResult compareConstant(const Expression& other) const {
         return ComparisonResult::kUnknown;
-    }
-
-    /**
-     * For an expression which evaluates to a constant int, returns the value. Otherwise calls
-     * SK_ABORT.
-     */
-    virtual SKSL_INT getConstantInt() const {
-        SK_ABORT("not a constant int");
-    }
-
-    /**
-     * For an expression which evaluates to a constant float, returns the value. Otherwise calls
-     * SK_ABORT.
-     */
-    virtual SKSL_FLOAT getConstantFloat() const {
-        SK_ABORT("not a constant float");
-    }
-
-    /**
-     * For an expression which evaluates to a constant Boolean, returns the value. Otherwise calls
-     * SK_ABORT.
-     */
-    virtual bool getConstantBool() const {
-        SK_ABORT("not a constant Boolean");
     }
 
     /**
@@ -164,50 +177,30 @@ public:
     }
 
     /**
-     * For a vector of floating point values, return the value of the n'th vector component. It is
-     * an error to call this method on an expression which is not a vector of floating-point
-     * constant expressions.
+     * Returns true if this expression type supports `getConstantSubexpression`. (This particular
+     * expression may or may not actually contain a constant value.) It's harmless to call
+     * `getConstantSubexpression` on expressions which don't allow constant subexpressions or don't
+     * contain any constant values, but if `allowsConstantSubexpressions` returns false, you can
+     * assume that `getConstantSubexpression` will return null for every slot of this expression.
+     * This allows for early-out opportunities in some cases. (Some expressions have tons of slots
+     * but never have a constant subexpression; e.g. a variable holding a very large array.)
      */
-    virtual SKSL_FLOAT getFVecComponent(int n) const {
-        SkDEBUGFAILF("expression does not support getVecComponent: %s",
-                     this->description().c_str());
-        return 0;
-    }
-
-    /**
-     * For a vector of integer values, return the value of the n'th vector component. It is an error
-     * to call this method on an expression which is not a vector of integer constant expressions.
-     */
-    virtual SKSL_INT getIVecComponent(int n) const {
-        SkDEBUGFAILF("expression does not support getVecComponent: %s",
-                     this->description().c_str());
-        return 0;
-    }
-
-    /**
-     * For a vector of Boolean values, return the value of the n'th vector component. It is an error
-     * to call this method on an expression which is not a vector of Boolean constant expressions.
-     */
-    virtual bool getBVecComponent(int n) const {
-        SkDEBUGFAILF("expression does not support getVecComponent: %s",
-                     this->description().c_str());
+    virtual bool allowsConstantSubexpressions() const {
         return false;
     }
 
     /**
-     * For a vector of literals, return the value of the n'th vector component. It is an error to
-     * call this method on an expression which is not a vector of Literal<T>.
+     * Returns the n'th compile-time constant expression within a literal or constructor.
+     * Use Type::slotCount to determine the number of subexpressions within an expression.
+     * Subexpressions which are not compile-time constants will return null.
+     * `vec4(1, vec2(2), 3)` contains four subexpressions: (1, 2, 2, 3)
+     * `mat2(f)` contains four subexpressions: (null, 0,
+     *                                          0, null)
+     * All classes which override this function must also implement `allowsConstantSubexpression`.
      */
-    template <typename T> T getVecComponent(int index) const;
-
-    /**
-     * For a literal matrix expression, return the floating point value of the component at
-     * [col][row]. It is an error to call this method on an expression which is not a literal
-     * matrix.
-     */
-    virtual SKSL_FLOAT getMatComponent(int col, int row) const {
-        SkASSERT(false);
-        return 0;
+    virtual const Expression* getConstantSubexpression(int n) const {
+        SkASSERT(!this->allowsConstantSubexpressions());
+        return nullptr;
     }
 
     virtual std::unique_ptr<Expression> clone() const = 0;
@@ -217,18 +210,6 @@ private:
 
     using INHERITED = IRNode;
 };
-
-template <> inline SKSL_FLOAT Expression::getVecComponent<SKSL_FLOAT>(int index) const {
-    return this->getFVecComponent(index);
-}
-
-template <> inline SKSL_INT Expression::getVecComponent<SKSL_INT>(int index) const {
-    return this->getIVecComponent(index);
-}
-
-template <> inline bool Expression::getVecComponent<bool>(int index) const {
-    return this->getBVecComponent(index);
-}
 
 }  // namespace SkSL
 

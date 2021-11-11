@@ -15,7 +15,7 @@
 GrDawnCaps::GrDawnCaps(const GrContextOptions& contextOptions) : INHERITED(contextOptions) {
     fMipmapSupport = true;
     fBufferMapThreshold = SK_MaxS32;  // FIXME: get this from Dawn?
-    fShaderCaps.reset(new GrShaderCaps(contextOptions));
+    fShaderCaps = std::make_unique<GrShaderCaps>();
     fMaxTextureSize = fMaxRenderTargetSize = 8192; // FIXME
     fMaxVertexAttributes = 16; // FIXME
     fClampToBorderSupport = false;
@@ -37,7 +37,7 @@ bool GrDawnCaps::isFormatSRGB(const GrBackendFormat& format) const {
     return false;
 }
 
-bool GrDawnCaps::isFormatTexturable(const GrBackendFormat& format) const {
+bool GrDawnCaps::isFormatTexturable(const GrBackendFormat& format, GrTextureType) const {
     // Currently, all the formats in GrDawnFormatToPixelConfig are texturable.
     wgpu::TextureFormat dawnFormat;
     return format.asDawnFormat(&dawnFormat);
@@ -169,7 +169,7 @@ GrProgramDesc GrDawnCaps::makeDesc(GrRenderTarget* rt,
                                    ProgramDescOverrideFlags overrideFlags) const {
     SkASSERT(overrideFlags == ProgramDescOverrideFlags::kNone);
     GrProgramDesc desc;
-    GrProgramDesc::Build(&desc, rt, programInfo, *this);
+    GrProgramDesc::Build(&desc, programInfo, *this);
 
     wgpu::TextureFormat format;
     if (!programInfo.backendFormat().asDawnFormat(&format)) {

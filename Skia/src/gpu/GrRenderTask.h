@@ -14,13 +14,12 @@
 #include "src/gpu/GrSurfaceProxyView.h"
 #include "src/gpu/GrTextureProxy.h"
 #include "src/gpu/GrTextureResolveManager.h"
-#include "src/gpu/ops/GrOp.h"
 
 class GrMockRenderTask;
 class GrOpFlushState;
-class GrOpsTask;
 class GrResourceAllocator;
 class GrTextureResolveRenderTask;
+namespace skgpu { namespace v1 { class OpsTask; }}
 
 // This class abstracts a task that targets a single GrSurfaceProxy, participates in the
 // GrDrawingManager's DAG, and implements the onExecute method to modify its target proxy's
@@ -30,7 +29,7 @@ public:
     GrRenderTask();
     SkDEBUGCODE(~GrRenderTask() override);
 
-    void makeClosed(const GrCaps&);
+    void makeClosed(GrRecordingContext*);
 
     void prePrepare(GrRecordingContext* context) { this->onPrePrepare(context); }
 
@@ -53,7 +52,7 @@ public:
     bool isClosed() const { return this->isSetFlag(kClosed_Flag); }
 
     /**
-     * A task can be marked as able to be skipped. It must be used purely for optimization purposes
+     * Make this task skippable. This must be used purely for optimization purposes
      * at this point as not all tasks will actually skip their work. It would be better if we could
      * detect tasks that can be skipped automatically. We'd need to support minimal flushes (i.e.,
      * only flush that which is required for SkSurfaces/SkImages) and the ability to detect
@@ -62,7 +61,9 @@ public:
      * exported to the client in case the client is doing direct reads outside of Skia and thus
      * may require tasks targeting the proxy to execute even if our DAG contains no reads.
      */
-    void canSkip();
+    void makeSkippable();
+
+    bool isSkippable() const { return this->isSetFlag(kSkippable_Flag); }
 
     /*
      * Notify this GrRenderTask that it relies on the contents of 'dependedOn'
@@ -76,7 +77,12 @@ public:
      */
     void addDependenciesFromOtherTask(GrRenderTask* otherTask);
 
-    SkSpan<GrRenderTask*> dependencies() { return SkSpan<GrRenderTask*>(fDependencies); }
+    SkSpan<GrRenderTask*> dependencies() { return SkMakeSpan(fDependencies); }
+    SkSpan<GrRenderTask*> dependents() { return SkMakeSpan(fDependents); }
+
+    void replaceDependency(const GrRenderTask* toReplace, GrRenderTask* replaceWith);
+    void replaceDependent(const GrRenderTask* toReplace, GrRenderTask* replaceWith);
+
 
     /*
      * Does this renderTask depend on 'dependedOn'?
@@ -87,13 +93,13 @@ public:
         idArray->push_back(fUniqueID);
     }
     uint32_t uniqueID() const { return fUniqueID; }
-    virtual int numTargets() const { return fTargets.count(); }
+    int numTargets() const { return fTargets.count(); }
     GrSurfaceProxy* target(int i) const { return fTargets[i].get(); }
 
     /*
-     * Safely cast this GrRenderTask to a GrOpsTask (if possible).
+     * Safely cast this GrRenderTask to a OpsTask (if possible).
      */
-    virtual GrOpsTask* asOpsTask() { return nullptr; }
+    virtual skgpu::v1::OpsTask* asOpsTask() { return nullptr; }
 
 #if GR_TEST_UTILS
     /*
@@ -109,12 +115,12 @@ public:
 #ifdef SK_DEBUG
     virtual int numClips() const { return 0; }
 
-    virtual void visitProxies_debugOnly(const GrOp::VisitProxyFunc&) const = 0;
+    virtual void visitProxies_debugOnly(const GrVisitProxyFunc&) const = 0;
 
-    void visitTargetAndSrcProxies_debugOnly(const GrOp::VisitProxyFunc& fn) const {
-        this->visitProxies_debugOnly(fn);
+    void visitTargetAndSrcProxies_debugOnly(const GrVisitProxyFunc& func) const {
+        this->visitProxies_debugOnly(func);
         for (const sk_sp<GrSurfaceProxy>& target : fTargets) {
-            fn(target.get(), GrMipmapped::kNo);
+            func(target.get(), GrMipmapped::kNo);
         }
     }
 #endif
@@ -161,7 +167,7 @@ protected:
     // modify in targetUpdateBounds.
     //
     // targetUpdateBounds must not extend beyond the proxy bounds.
-    virtual ExpectedOutcome onMakeClosed(const GrCaps&, SkIRect* targetUpdateBounds) = 0;
+    virtual ExpectedOutcome onMakeClosed(GrRecordingContext*, SkIRect* targetUpdateBounds) = 0;
 
     SkSTArray<1, sk_sp<GrSurfaceProxy>> fTargets;
 
@@ -173,9 +179,11 @@ protected:
     enum Flags {
         kClosed_Flag    = 0x01,   //!< This task can't accept any more dependencies.
         kDisowned_Flag  = 0x02,   //!< This task is disowned by its creating GrDrawingManager.
+        kSkippable_Flag = 0x04,   //!< This task is skippable.
+        kAtlas_Flag     = 0x08,   //!< This task is atlas.
 
-        kWasOutput_Flag = 0x04,   //!< Flag for topological sorting
-        kTempMark_Flag  = 0x08,   //!< Flag for topological sorting
+        kWasOutput_Flag = 0x10,   //!< Flag for topological sorting
+        kTempMark_Flag  = 0x20,   //!< Flag for topological sorting
     };
 
     void setFlag(uint32_t flag) {
@@ -192,17 +200,17 @@ protected:
 
     void setIndex(uint32_t index) {
         SkASSERT(!this->isSetFlag(kWasOutput_Flag));
-        SkASSERT(index < (1 << 28));
-        fFlags |= index << 4;
+        SkASSERT(index < (1 << 26));
+        fFlags |= index << 6;
     }
 
     uint32_t getIndex() const {
         SkASSERT(this->isSetFlag(kWasOutput_Flag));
-        return fFlags >> 4;
+        return fFlags >> 6;
     }
 
 private:
-    // for TopoSortTraits, fTextureResolveTask, closeThoseWhoDependOnMe, addDependency
+    // for TopoSortTraits, fTextureResolveTask, addDependency
     friend class GrDrawingManager;
     friend class GrMockRenderTask;
 
@@ -214,7 +222,6 @@ private:
     void addDependent(GrRenderTask* dependent);
     SkDEBUGCODE(bool isDependent(const GrRenderTask* dependent) const;)
     SkDEBUGCODE(void validate() const;)
-    void closeThoseWhoDependOnMe(const GrCaps&);
 
     static uint32_t CreateUniqueID();
 
@@ -246,9 +253,9 @@ private:
         }
     };
 
-    virtual void onCanSkip() {}
-    virtual void onPrePrepare(GrRecordingContext*) {} // Only the GrOpsTask currently overrides this
-    virtual void onPrepare(GrOpFlushState*) {} // Only GrOpsTask and GrDDLTask override this virtual
+    virtual void onMakeSkippable() {}
+    virtual void onPrePrepare(GrRecordingContext*) {} // Only OpsTask currently overrides this
+    virtual void onPrepare(GrOpFlushState*) {} // OpsTask and GrDDLTask override this
     virtual bool onExecute(GrOpFlushState* flushState) = 0;
 
     const uint32_t         fUniqueID;
