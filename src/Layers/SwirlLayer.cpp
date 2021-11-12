@@ -1,6 +1,7 @@
 #include "include/Layers/SwirlLayer.h"
 #include "include/Layers/Utils/Utils.h"
 #include "include/Controls/Slider.h"
+#include "include/Controls/Button.h"
 
 #include "include/core/SkImage.h"
 
@@ -79,6 +80,7 @@ SwirlLayer::SwirlLayer()
 	m_YSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"Y:"});
 	m_RadiusSlider = m_Container.AddControl<Slider>(0.75f, 0.0f, 1.0f, SkString{"Radius:"});
 	m_TwistsSlider = m_Container.AddControl<Slider>(0.0f, -3.0f, 3.0f, SkString{"Twists:"});
+	m_Container.AddControl<Button>(nullptr, SkString{"Trolololo"});
 
 	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{SWIRL_SHADER.c_str()});
 	if (!effect.effect)
