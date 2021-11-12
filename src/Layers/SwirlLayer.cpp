@@ -8,8 +8,6 @@
 
 namespace
 {
-	constexpr SkScalar kMinTwists = -6.0f;
-	constexpr SkScalar kMaxTwists = 6.0f;
 	constexpr SkScalar kPanelSize = 300.0f;  // in px
 	constexpr SkScalar kPanelPadding = 10.0f;  // in px
 
@@ -71,26 +69,16 @@ namespace
 		bounds.fLeft = bounds.fRight - kPanelSize;
 		return bounds.makeInset(kPanelPadding, kPanelPadding);
 	}
-
-	SkScalar GetValue(SkScalar value)
-	{
-		return (kMaxTwists - kMinTwists) * value + kMinTwists;
-	}
-
-	SkScalar GetSliderValue(SkScalar value)
-	{
-		return (value - kMinTwists) / (kMaxTwists - kMinTwists);
-	}
 }
 
 SwirlLayer::SwirlLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
 
-	m_XSlider = m_Container.AddControl<Slider>(0.5f, SkString{"X:"});
-	m_YSlider = m_Container.AddControl<Slider>(0.5f, SkString{"Y:"});
-	m_RadiusSlider = m_Container.AddControl<Slider>(0.75f, SkString{"Radius:"});
-	m_TwistsSlider = m_Container.AddControl<Slider>(GetSliderValue(0.5f), SkString{"Twists:"});
+	m_XSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"X:"});
+	m_YSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"Y:"});
+	m_RadiusSlider = m_Container.AddControl<Slider>(0.75f, 0.0f, 1.0f, SkString{"Radius:"});
+	m_TwistsSlider = m_Container.AddControl<Slider>(0.0f, -3.0f, 3.0f, SkString{"Twists:"});
 
 	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{SWIRL_SHADER.c_str()});
 	if (!effect.effect)
@@ -116,7 +104,7 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 		params.x = m_XSlider.lock()->GetValue();
 		params.y = m_YSlider.lock()->GetValue();
 		params.radius = m_RadiusSlider.lock()->GetValue();
-		params.twist = GetValue(m_TwistsSlider.lock()->GetValue());
+		params.twist = m_TwistsSlider.lock()->GetValue();
 
 		SkPaint paint;
 		paint.setShader(CreateBWShader(m_Image, m_Effect, params));

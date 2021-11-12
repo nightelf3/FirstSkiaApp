@@ -15,6 +15,7 @@
     <ClCompile Include="src\Backgounds\BaseBackgound.cpp" />
     <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp" />
     <ClCompile Include="src\Backgounds\RasterBackgound.cpp" />
+    <ClCompile Include="src\Controls\BaseValueControl.cpp" />
     <ClCompile Include="src\Layers\SwirlLayer.cpp" />
     <ClCompile Include="src\Controls\ControlsContainer.cpp" />
     <ClCompile Include="src\Controls\Slider.cpp" />
@@ -24,12 +25,15 @@
     <ClCompile Include="src\Layers\Utils\Utils.cpp" />
     <ClCompile Include="src\PlatformApplication_win.cpp" />
     <ClCompile Include="src\PlatformWindow_win.cpp" />
+    <ClCompile Include="src\Controls\BaseControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Application.h" />
     <ClInclude Include="src\include\Backgounds\BaseBackgound.h" />
     <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h" />
     <ClInclude Include="src\include\Backgounds\RasterBackgound.h" />
+    <ClInclude Include="src\include\Controls\BaseControl.h" />
+    <ClInclude Include="src\include\Interfaces\IControlValue.h" />
     <ClInclude Include="src\include\Layers\SwirlLayer.h" />
     <ClInclude Include="src\include\Controls\BaseValueControl.h" />
     <ClInclude Include="src\include\Controls\ControlsContainer.h" />

@@ -1,45 +1,23 @@
 #pragma once
 
-#include "include/Interfaces/IControl.h"
-#include "include/Layers/Utils/Utils.h"
+#include "include/Interfaces/IControlValue.h"
+#include <algorithm>
 
 class BaseValueControl : public IControlValue
 {
 public:
-	BaseValueControl(SkScalar defValue = 0.0f) :
-		m_Value(defValue)
-	{
-	}
+	BaseValueControl(SkScalar value = 0.0f, SkScalar min = 0.0f, SkScalar max = 1.0f);
+	~BaseValueControl() override;
 
-	void Draw(SkCanvas* canvas, const SkRect& bounds)
-	{
-		m_Bounds = bounds;
-	}
-
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
-	{
-		return IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);
-	}
-
-	SkScalar GetValue() const { return m_Value; }
-	void SetValue(SkScalar value) { m_Value = std::move(value); }
+	SkScalar GetValue() const override { return m_Value; }
+	void SetValue(SkScalar value) override { m_Value = std::clamp(value, m_Min, m_Max); }
 
 protected:
-	SkRect GetBounds() const { return m_Bounds; }
-
-	bool IsSupportInputState(InputState state) const
-	{
-		switch (state)
-		{
-		case InputState::kDown:
-		case InputState::kUp:
-		case InputState::kMove:
-			return true;
-		}
-		return false;
-	}
+	SkScalar GetMinValue() const { return m_Min; }
+	SkScalar GetMaxValue() const { return m_Max; }
 
 private:
-	SkRect m_Bounds;
 	SkScalar m_Value = 0.0f;
+	const SkScalar m_Min = 0.0f;
+	const SkScalar m_Max = 1.0f;
 };

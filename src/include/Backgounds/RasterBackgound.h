@@ -7,7 +7,7 @@ class RasterBackgound : public BaseBackgound
 {
 public:
 	RasterBackgound(WHandle handle);
-	~RasterBackgound();
+	~RasterBackgound() override;
 
 	std::wstring GetName() const override { return L"Raster"; }
 	sk_sp<SkSurface> CreateSurface(int widht, int height) override;

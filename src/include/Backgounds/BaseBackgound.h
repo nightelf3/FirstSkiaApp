@@ -7,6 +7,7 @@ class BaseBackgound : public IBackground
 {
 public:
 	BaseBackgound(WHandle handle);
+	~BaseBackgound() override = default;
 
 protected:
 	WHandle m_WHandle;

@@ -30,6 +30,9 @@
       <Filter>Layers\Utils</Filter>
     </ClCompile>
     <ClCompile Include="src\Layers\SwirlLayer.cpp" />
+    <ClCompile Include="src\Controls\BaseControl.cpp" />
+    <ClCompile Include="src\Controls\BaseValueControl.cpp" />
+    <ClCompile Include="src\Controls\Button.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Layers\Utils\FPS.h">
@@ -87,6 +90,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="src\include\Layers\SwirlLayer.h" />
+    <ClInclude Include="src\include\Controls\Button.h" />
+    <ClInclude Include="src\include\Controls\BaseControl.h" />
+    <ClInclude Include="src\include\Interfaces\IControlValue.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Backgounds">

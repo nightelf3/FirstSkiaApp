@@ -8,7 +8,7 @@ class OpenGLBackgound : public BaseBackgound
 {
 public:
 	OpenGLBackgound(WHandle handle);
-	~OpenGLBackgound();
+	~OpenGLBackgound() override;
 
 	std::wstring GetName() const override { return L"OpenGL"; }
 	sk_sp<SkSurface> CreateSurface(int widht, int height) override;

@@ -104,61 +104,47 @@ namespace
 }
 
 Slider::Slider(SkScalar value, SkScalar min, SkScalar max, SkString caption) :
-	BaseValueControl(value),
-	m_Min(min),
-	m_Max(max),
-	m_Caption(std::move(caption))
+	BaseControl(std::move(caption)),
+	BaseValueControl(value, min, max)
 {
 }
 
 void Slider::Draw(SkCanvas* canvas, const SkRect& bounds)
 {
 	SkRect trackBounds = bounds;
-	if (!m_Caption.isEmpty())
+	if (!GetCaption().isEmpty())
 	{
 		SkPaint paint;
 		paint.setAntiAlias(true);
 		paint.setColor(SkColors::kBlack);
-		DrawSimpleText(canvas, m_Caption, GetTextPoint(m_Caption, bounds, kEditTextPadding, &paint), paint);
-		trackBounds.fLeft += GetTextSize(m_Caption).width() + kEditPadding;
+		DrawSimpleText(canvas, GetCaption(), GetTextPoint(GetCaption(), bounds, kEditTextPadding, &paint), paint);
+		trackBounds.fLeft += GetTextSize(GetCaption()).width() + kEditPadding;
 	}
 
-	DrawRectAndOutline(canvas, GetTrackRect(trackBounds), SkColors::kGray, m_Active);
-	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue(), m_Min, m_Max), SkColors::kGray, m_Active);
-	DrawEditBox(canvas, GetEditRect(trackBounds), GetValue(), m_Active);
+	DrawRectAndOutline(canvas, GetTrackRect(trackBounds), SkColors::kGray, IsActive());
+	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue(), GetMinValue(), GetMaxValue()), SkColors::kGray, IsActive());
+	DrawEditBox(canvas, GetEditRect(trackBounds), GetValue(), IsActive());
 
 	return __super::Draw(canvas, trackBounds);
-}
-
-bool Slider::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
-{
-	m_Active = m_MouseDown || __super::ProcessMouse(x, y, state, modifiers);
-	if (!m_Active)
-		return false;
-
-	switch (state)
-	{
-	case InputState::kDown:
-		m_MouseDown = true;
-		SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
-		break;
-
-	case InputState::kUp:
-		if (m_MouseDown)
-			SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
-		m_MouseDown = false;
-		break;
-
-	case InputState::kMove:
-		if (m_MouseDown)
-			SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
-		break;
-	}
-
-	return true;
 }
 
 SkScalar Slider::GetHeight() const
 {
 	return kThumbHeight;
+}
+
+void Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
+{
+	SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
+}
+
+void Slider::OnMouseMove(int x, int y, ModifierKey modifiers, bool active)
+{
+	if (active)
+		SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
+}
+
+void Slider::OnMouseUp(int x, int y, ModifierKey modifiers)
+{
+	SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
 }

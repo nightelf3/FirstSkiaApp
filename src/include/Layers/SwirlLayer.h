@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseLayer.h"
+#include "include/Interfaces/IControlValue.h"
 #include "include/Controls/ControlsContainer.h"
 #include "include/effects/SkRuntimeEffect.h"
 
@@ -8,6 +9,8 @@ class SwirlLayer final : public BaseLayer
 {
 public:
 	SwirlLayer();
+	~SwirlLayer() override = default;
+
 	std::wstring GetTitle() const override { return L"Swirl"; };
 	void Draw(SkCanvas* canvas) override;
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;

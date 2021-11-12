@@ -6,11 +6,14 @@
 class ControlsContainer : public IControl
 {
 public:
+	~ControlsContainer() override = default;
+
 	template<typename T, class... TArgs>
-	std::weak_ptr<IControlValue> AddControl(TArgs&&... args)
+	std::weak_ptr<T> AddControl(TArgs&&... args)
 	{
-		m_Controls.push_back(std::make_shared<T>(std::forward<TArgs>(args)...));
-		return m_Controls.back();
+		auto control = std::make_shared<T>(std::forward<TArgs>(args)...);
+		m_Controls.push_back(control);
+		return control;
 	}
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;
@@ -20,5 +23,5 @@ public:
 private:
 	SkRect GetPanelRect(const SkRect& bounds) const;
 
-	std::vector<std::shared_ptr<IControlValue>> m_Controls;
+	std::vector<std::shared_ptr<IControl>> m_Controls;
 };

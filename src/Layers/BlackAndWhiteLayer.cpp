@@ -115,28 +115,18 @@ namespace
 		bounds.fLeft = bounds.fRight - kPanelSize;
 		return bounds.makeInset(kPanelPadding, kPanelPadding);
 	}
-
-	SkScalar GetValue(SkScalar value)
-	{
-		return (kMax - kMin) * value + kMin;
-	}
-
-	SkScalar GetSliderValue(SkScalar value)
-	{
-		return (value - kMin) / (kMax - kMin);
-	}
 }
 
 BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
 
-	m_RedSlider = m_Container.AddControl<Slider>(GetSliderValue(40.0f), SkString{"Red:"});
-	m_YellowSlider = m_Container.AddControl<Slider>(GetSliderValue(60.0f), SkString{"Yellow:"});
-	m_GreenSlider = m_Container.AddControl<Slider>(GetSliderValue(40.0f), SkString{"Green:"});
-	m_CyanSlider = m_Container.AddControl<Slider>(GetSliderValue(60.0f), SkString{"Cyan:"});
-	m_BlueSlider = m_Container.AddControl<Slider>(GetSliderValue(20.0f), SkString{"Blue:"});
-	m_MagentaSlider = m_Container.AddControl<Slider>(GetSliderValue(80.0f), SkString{"Magenta:"});
+	m_RedSlider = m_Container.AddControl<Slider>(40.0f, kMin, kMax, SkString{"Red:"});
+	m_YellowSlider = m_Container.AddControl<Slider>(60.0f, kMin, kMax, SkString{"Yellow:"});
+	m_GreenSlider = m_Container.AddControl<Slider>(40.0f, kMin, kMax, SkString{"Green:"});
+	m_CyanSlider = m_Container.AddControl<Slider>(60.0f, kMin, kMax, SkString{"Cyan:"});
+	m_BlueSlider = m_Container.AddControl<Slider>(20.0f, kMin, kMax, SkString{"Blue:"});
+	m_MagentaSlider = m_Container.AddControl<Slider>(80.0f, kMin, kMax, SkString{"Magenta:"});
 
 	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{BW_SHADER.c_str()});
 	if (!effect.effect)
@@ -157,12 +147,12 @@ void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 		canvas->setMatrix(SkMatrix::RectToRect(imageRect, bounds, SkMatrix::kCenter_ScaleToFit));
 
 		BWParameters params;
-		params.red = GetValue(m_RedSlider.lock()->GetValue());
-		params.yellow = GetValue(m_YellowSlider.lock()->GetValue());
-		params.green = GetValue(m_GreenSlider.lock()->GetValue());
-		params.cyan = GetValue(m_CyanSlider.lock()->GetValue());
-		params.blue = GetValue(m_BlueSlider.lock()->GetValue());
-		params.magenta = GetValue(m_MagentaSlider.lock()->GetValue());
+		params.red = m_RedSlider.lock()->GetValue();
+		params.yellow = m_YellowSlider.lock()->GetValue();
+		params.green = m_GreenSlider.lock()->GetValue();
+		params.cyan = m_CyanSlider.lock()->GetValue();
+		params.blue = m_BlueSlider.lock()->GetValue();
+		params.magenta = m_MagentaSlider.lock()->GetValue();
 
 		SkPaint paint;
 		paint.setShader(CreateBWShader(m_Image, m_Effect, params));
