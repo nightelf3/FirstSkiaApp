@@ -13,14 +13,16 @@ namespace
 	constexpr SkScalar kEditWidth = 30.0f; // in px
 	constexpr SkScalar kEditPadding = kThumbWidth / 2.0f + 4.0f; // in px
 	constexpr SkScalar kEditTextPadding = 2.0f; // in px
+	constexpr size_t kMaxChars = 5;
 
 	SkRect GetTrackRect(const SkRect& bounds)
 	{
 		return SkRect::MakeXYWH(bounds.left() + kThumbWidth / 2.0f, bounds.centerY() - kTrackHeight / 2.0f, bounds.width() - kThumbWidth - kEditWidth - kEditPadding, kTrackHeight);
 	}
 
-	SkRect GetThumbRect(const SkRect& bounds, SkScalar value)
+	SkRect GetThumbRect(const SkRect& bounds, SkScalar value, SkScalar min, SkScalar max)
 	{
+		value = (value - min) / (max - min);
 		const SkRect track = GetTrackRect(bounds);
 		return SkRect::MakeXYWH(track.left() + track.width() * value - kThumbWidth / 2.0f, track.centerY() - kThumbHeight / 2.0f, kThumbWidth, kThumbHeight);
 	}
@@ -31,10 +33,10 @@ namespace
 		return SkRect::MakeXYWH(track.right() + kEditPadding, track.centerY() - kThumbHeight / 2.0f, kEditWidth, kThumbHeight);
 	}
 
-	SkScalar GetValueFromPos(const SkRect& bounds, SkScalar x)
+	SkScalar GetValueFromPos(const SkRect& bounds, SkScalar x, SkScalar min, SkScalar max)
 	{
 		const SkRect track = GetTrackRect(bounds);
-		return GetClamped((x - track.left()) / track.width(), 0.0f, 1.0f);
+		return std::clamp((x - track.left()) / track.width(), 0.0f, 1.0f) * (max - min) + min ;
 	}
 
 	void DrawRectAndOutline(SkCanvas* canvas, const SkRect& bounds, const SkColor4f& bgColor, bool bActive)
@@ -80,6 +82,12 @@ namespace
 	{
 		SkString str;
 		str.printf("%.3f", value);
+		if (str.size() > kMaxChars)
+		{
+			str.resize(kMaxChars);
+			if (str[kMaxChars - 1] == '.')
+				str.resize(kMaxChars - 1);
+		}
 		return str;
 	}
 
@@ -95,8 +103,10 @@ namespace
 	}
 }
 
-Slider::Slider(SkScalar defValue, SkString caption) :
-	BaseValueControl(defValue),
+Slider::Slider(SkScalar value, SkScalar min, SkScalar max, SkString caption) :
+	BaseValueControl(value),
+	m_Min(min),
+	m_Max(max),
 	m_Caption(std::move(caption))
 {
 }
@@ -114,7 +124,7 @@ void Slider::Draw(SkCanvas* canvas, const SkRect& bounds)
 	}
 
 	DrawRectAndOutline(canvas, GetTrackRect(trackBounds), SkColors::kGray, m_Active);
-	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue()), SkColors::kGray, m_Active);
+	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue(), m_Min, m_Max), SkColors::kGray, m_Active);
 	DrawEditBox(canvas, GetEditRect(trackBounds), GetValue(), m_Active);
 
 	return __super::Draw(canvas, trackBounds);
@@ -130,17 +140,18 @@ bool Slider::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 	{
 	case InputState::kDown:
 		m_MouseDown = true;
-		SetValue(GetValueFromPos(GetBounds(), x));
+		SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
 		break;
 
 	case InputState::kUp:
-		SetValue(GetValueFromPos(GetBounds(), x));
+		if (m_MouseDown)
+			SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
 		m_MouseDown = false;
 		break;
 
 	case InputState::kMove:
 		if (m_MouseDown)
-			SetValue(GetValueFromPos(GetBounds(), x));
+			SetValue(GetValueFromPos(GetBounds(), x, m_Min, m_Max));
 		break;
 	}
 
