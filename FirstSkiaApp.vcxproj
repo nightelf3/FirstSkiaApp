@@ -104,11 +104,11 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build\$(Configuration)</AdditionalLibraryDirectories>
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(ProjectDir)Skia\build\skia.dll" "$(OutDir)"
+      <Command>xcopy /y "$(ProjectDir)Skia\build\$(Configuration)\skia.dll" "$(OutDir)"
 xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
