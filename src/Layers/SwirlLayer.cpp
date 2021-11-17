@@ -74,7 +74,7 @@ namespace
 
 SwirlLayer::SwirlLayer()
 {
-	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
+	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
 	m_XSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"X:"});
 	m_YSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"Y:"});

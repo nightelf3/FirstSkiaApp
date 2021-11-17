@@ -119,7 +119,7 @@ namespace
 
 BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
-	m_Image = LoadImageFromFile(SkString("resources/8k.jpg"));
+	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
 	m_RedSlider = m_Container.AddControl<Slider>(40.0f, kMin, kMax, SkString{"Red:"});
 	m_YellowSlider = m_Container.AddControl<Slider>(60.0f, kMin, kMax, SkString{"Yellow:"});
