@@ -1,4 +1,5 @@
 #include "include/Controls/ControlsContainer.h"
+#include "include/Utils/DrawUtils.h"
 
 #include "include/core/SkCanvas.h"
 
@@ -7,20 +8,18 @@ namespace
 	constexpr SkScalar kPanelRadius = 10.0f;  // in px
 	constexpr SkScalar kPanelPadding = 10.0f;  // in px
 	constexpr SkScalar kControlPadding = 4.0f;  // in px
+
+	const DrawUtils::DrawParameters& GetDrawParameters()
+	{
+		static DrawUtils::DrawParameters params{SkColors::kDkGray.toSkColor() , SkColors::kGray.toSkColor()};
+		return params;
+	}
 }
 
 void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 {
-	SkPaint paint;
-	paint.setAntiAlias(true);
-	paint.setColor(SkColors::kDkGray);
-	paint.setStyle(SkPaint::kFill_Style);
 	const SkRect panelRect = GetPanelRect(bounds);
-	canvas->drawRoundRect(panelRect, kPanelRadius, kPanelRadius, paint);
-
-	paint.setColor(SkColors::kGray);
-	paint.setStyle(SkPaint::kStroke_Style);
-	canvas->drawRoundRect(panelRect, kPanelRadius, kPanelRadius, paint);
+	DrawUtils::DrawRoundRect(canvas, panelRect, kPanelRadius, kPanelRadius, GetDrawParameters());
 
 	const SkRect controlsRect = panelRect.makeInset(kPanelPadding, kPanelPadding);
 	SkAutoCanvasRestore guard(canvas, true);

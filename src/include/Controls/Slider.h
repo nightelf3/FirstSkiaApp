@@ -12,8 +12,10 @@ public:
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;
 	SkScalar GetHeight() const override;
 
-protected:
-	void OnMouseDown(int x, int y, ModifierKey modifiers) override;
+private:
+	bool OnMouseDown(int x, int y, ModifierKey modifiers) override;
 	void OnMouseMove(int x, int y, ModifierKey modifiers, bool active) override;
 	void OnMouseUp(int x, int y, ModifierKey modifiers) override;
+
+	SkRect m_Track;
 };

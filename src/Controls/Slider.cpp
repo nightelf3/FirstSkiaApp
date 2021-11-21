@@ -1,9 +1,8 @@
 #include "include/Controls/Slider.h"
 #include "include/Utils/Utils.h"
+#include "include/Utils/DrawUtils.h"
 
 #include "include/core/SkCanvas.h"
-#include "include/core/SkFont.h"
-#include "include/core/SkFontMgr.h"
 
 namespace
 {
@@ -11,8 +10,9 @@ namespace
 	constexpr SkScalar kThumbWidth = 8.0f; // in px
 	constexpr SkScalar kThumbHeight = 20.0f; // in px
 	constexpr SkScalar kEditWidth = 30.0f; // in px
-	constexpr SkScalar kEditPadding = kThumbWidth / 2.0f + 4.0f; // in px
-	constexpr SkScalar kEditTextPadding = 2.0f; // in px
+	constexpr SkScalar kPadding = 4.0f; // in px
+	constexpr SkScalar kEditPadding = kThumbWidth / 2.0f + kPadding; // in px
+	constexpr SkScalar kEditTextPadding = 4.0f; // in px
 	constexpr size_t kMaxChars = 5;
 
 	SkRect GetTrackRect(const SkRect& bounds)
@@ -30,52 +30,12 @@ namespace
 	SkRect GetEditRect(const SkRect& bounds)
 	{
 		const SkRect track = GetTrackRect(bounds);
-		return SkRect::MakeXYWH(track.right() + kEditPadding, track.centerY() - kThumbHeight / 2.0f, kEditWidth, kThumbHeight);
+		return SkRect::MakeXYWH(track.right() + kEditPadding, track.centerY() - kThumbHeight / 2.0f, kEditWidth + kPadding, kThumbHeight);
 	}
 
 	SkScalar GetValueFromPos(const SkRect& bounds, SkScalar x, SkScalar min, SkScalar max)
 	{
-		const SkRect track = GetTrackRect(bounds);
-		return std::clamp((x - track.left()) / track.width(), 0.0f, 1.0f) * (max - min) + min ;
-	}
-
-	void DrawRectAndOutline(SkCanvas* canvas, const SkRect& bounds, const SkColor4f& bgColor, bool bActive)
-	{
-		SkPaint paint;
-		paint.setColor(bgColor);
-		paint.setStyle(SkPaint::kFill_Style);
-		canvas->drawRect(bounds, paint);
-
-		paint.setColor(bActive ? SkColors::kBlue : SkColors::kLtGray);
-		paint.setStyle(SkPaint::kStroke_Style);
-		canvas->drawRect(bounds, paint);
-	}
-
-	SkFont GetFont()
-	{
-		sk_sp<SkFontMgr> fontManager = SkFontMgr::RefDefault();
-		sk_sp<SkTypeface> typeface(fontManager->matchFamilyStyle(nullptr, {}));
-		return SkFont{typeface, 11};
-	}
-
-	void DrawSimpleText(SkCanvas* canvas, const SkString& str, const SkPoint& pt, const SkPaint& paint)
-	{
-		const SkFont font = GetFont();
-		canvas->drawSimpleText(str.c_str(), str.size(), SkTextEncoding::kUTF8, pt.x(), pt.y(), font, paint);
-	}
-
-	SkSize GetTextSize(const SkString& str, SkPaint* paint = nullptr)
-	{
-		const SkFont font = GetFont();
-		SkRect measure;
-		font.measureText(str.c_str(), str.size(), SkTextEncoding::kUTF8, &measure, paint);
-		return SkSize::Make(measure.width(), measure.height());
-	}
-
-	SkPoint GetTextPoint(const SkString& str, const SkRect& rect, SkScalar xOffset, SkPaint* paint = nullptr)
-	{
-		const SkSize textSize = GetTextSize(str, paint);
-		return SkPoint::Make(rect.x() + xOffset, rect.bottom() - (rect.height() - textSize.height()) / 2.0f);
+		return std::clamp((x - bounds.left()) / bounds.width(), 0.0f, 1.0f) * (max - min) + min ;
 	}
 
 	SkString ToString(SkScalar value)
@@ -93,13 +53,15 @@ namespace
 
 	void DrawEditBox(SkCanvas* canvas, const SkRect& bounds, SkScalar value, bool bActive)
 	{
-		DrawRectAndOutline(canvas, bounds, SkColors::kWhite, bActive);
+		auto paintParams = DrawUtils::GetDefaultParameters(bActive);
+		paintParams.background = SkColors::kWhite.toSkColor();
+		DrawUtils::DrawRect(canvas, bounds, paintParams);
 
 		SkPaint paint;
 		paint.setAntiAlias(true);
 		paint.setColor(SkColors::kBlack);
 		const SkString str = ToString(value);
-		DrawSimpleText(canvas, str, GetTextPoint(str, bounds, kEditTextPadding, &paint), paint);
+		DrawUtils::DrawSimpleText(canvas, str, DrawUtils::GetTextPoint(str, bounds, kEditTextPadding, paint), paint);
 	}
 }
 
@@ -116,16 +78,17 @@ void Slider::Draw(SkCanvas* canvas, const SkRect& bounds)
 	{
 		SkPaint paint;
 		paint.setAntiAlias(true);
-		paint.setColor(SkColors::kBlack);
-		DrawSimpleText(canvas, GetCaption(), GetTextPoint(GetCaption(), bounds, kEditTextPadding, &paint), paint);
-		trackBounds.fLeft += GetTextSize(GetCaption()).width() + kEditPadding;
+		paint.setColor(SkColors::kWhite);
+		DrawUtils::DrawSimpleText(canvas, GetCaption(), DrawUtils::GetTextPoint(GetCaption(), bounds, 0.0f, paint), paint);
+		trackBounds.fLeft += DrawUtils::GetTextSize(GetCaption()).width() + kEditPadding - kPadding;
 	}
 
-	DrawRectAndOutline(canvas, GetTrackRect(trackBounds), SkColors::kGray, IsActive());
-	DrawRectAndOutline(canvas, GetThumbRect(trackBounds, GetValue(), GetMinValue(), GetMaxValue()), SkColors::kGray, IsActive());
+	m_Track = GetTrackRect(trackBounds);
+	DrawUtils::DrawRect(canvas, m_Track, DrawUtils::GetDefaultParameters(IsActive()));
+	DrawUtils::DrawRect(canvas, GetThumbRect(trackBounds, GetValue(), GetMinValue(), GetMaxValue()), DrawUtils::GetDefaultParameters(IsActive()));
 	DrawEditBox(canvas, GetEditRect(trackBounds), GetValue(), IsActive());
 
-	return __super::Draw(canvas, trackBounds);
+	return __super::Draw(canvas, bounds);
 }
 
 SkScalar Slider::GetHeight() const
@@ -133,18 +96,21 @@ SkScalar Slider::GetHeight() const
 	return kThumbHeight;
 }
 
-void Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
+bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 {
-	SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
+	if (!IsPointInRect(x, y, m_Track))
+		return false;
+	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
+	return true;
 }
 
 void Slider::OnMouseMove(int x, int y, ModifierKey modifiers, bool active)
 {
 	if (active)
-		SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
+		SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 }
 
 void Slider::OnMouseUp(int x, int y, ModifierKey modifiers)
 {
-	SetValue(GetValueFromPos(GetBounds(), x, GetMinValue(), GetMaxValue()));
+	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 }
