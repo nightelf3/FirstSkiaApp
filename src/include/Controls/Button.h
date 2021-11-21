@@ -12,8 +12,10 @@ public:
 	SkScalar GetHeight() const override;
 
 protected:
+	bool OnMouseDown(int x, int y, ModifierKey modifiers) override;
 	void OnMouseUp(int x, int y, ModifierKey modifiers) override;
 
 private:
 	std::function<void()> m_Action;
+	bool m_Pressed = false;
 };

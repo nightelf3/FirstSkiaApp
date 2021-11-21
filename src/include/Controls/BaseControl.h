@@ -18,7 +18,7 @@ protected:
 	const SkString& GetCaption() const { return m_Caption; }
 
 	virtual bool IsSupportInputState(InputState state) const;
-	virtual void OnMouseDown(int x, int y, ModifierKey modifiers) {}
+	virtual bool OnMouseDown(int x, int y, ModifierKey modifiers) { return false; }
 	virtual void OnMouseMove(int x, int y, ModifierKey modifiers, bool active) {}
 	virtual void OnMouseUp(int x, int y, ModifierKey modifiers) {}
 

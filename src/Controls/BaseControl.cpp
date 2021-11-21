@@ -16,8 +16,7 @@ bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modif
 	switch (state)
 	{
 	case InputState::kDown:
-		m_MouseDown = true;
-		OnMouseDown(x, y, modifiers);
+		m_MouseDown = OnMouseDown(x, y, modifiers);
 		break;
 
 	case InputState::kMove:
