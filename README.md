@@ -9,7 +9,7 @@ Windows only project (at least, for now) to play with Skia.
 - Add it to the [Application][Application]
 
 ### Examples
-Check the folowing branch for examples: [example branch][Application]
+Check the folowing branch for examples: [example branch][Examples]
 
 
 
