@@ -48,11 +48,12 @@ namespace
 	{
 		float width = 0.0f;
 		float height = 0.0f;
-		float x = 0.0f;
-		float y = 0.0f;
-		float radius = 0.0f;
+		float x = 0.5f;
+		float y = 0.5f;
+		float radius = 0.75f;
 		float twist = 0.0f;
 	};
+	static const SwirlParameters kSwirlDefault;
 
 	sk_sp<SkShader> CreateBWShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect, SwirlParameters& params)
 	{
@@ -76,11 +77,16 @@ SwirlLayer::SwirlLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
-	m_XSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"X:"});
-	m_YSlider = m_Container.AddControl<Slider>(0.5f, 0.0f, 1.0f, SkString{"Y:"});
-	m_RadiusSlider = m_Container.AddControl<Slider>(0.75f, 0.0f, 1.0f, SkString{"Radius:"});
-	m_TwistsSlider = m_Container.AddControl<Slider>(0.0f, -3.0f, 3.0f, SkString{"Twists:"});
-	m_Container.AddControl<Button>(nullptr, SkString{"Trolololo"});
+	m_XSlider = m_Container.AddControl<Slider>(kSwirlDefault.x, 0.0f, 1.0f, SkString{"X:"});
+	m_YSlider = m_Container.AddControl<Slider>(kSwirlDefault.y, 0.0f, 1.0f, SkString{"Y:"});
+	m_RadiusSlider = m_Container.AddControl<Slider>(kSwirlDefault.radius, 0.0f, 1.0f, SkString{"Radius:"});
+	m_TwistsSlider = m_Container.AddControl<Slider>(kSwirlDefault.twist, -3.0f, 3.0f, SkString{"Twists:"});
+	m_Container.AddControl<Button>([this]() {
+		m_XSlider.lock()->SetValue(kSwirlDefault.x);
+		m_YSlider.lock()->SetValue(kSwirlDefault.y);
+		m_RadiusSlider.lock()->SetValue(kSwirlDefault.radius);
+		m_TwistsSlider.lock()->SetValue(kSwirlDefault.twist);
+	}, SkString{"Reset"});
 
 	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{SWIRL_SHADER.c_str()});
 	if (!effect.effect)

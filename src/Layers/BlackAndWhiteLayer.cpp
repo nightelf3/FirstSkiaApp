@@ -1,6 +1,7 @@
 #include "include/Layers/BlackAndWhiteLayer.h"
-#include "include/Layers/Utils/Utils.h"
+#include "include/Utils/Utils.h"
 #include "include/Controls/Slider.h"
+#include "include/Controls/Button.h"
 
 #include "include/core/SkImage.h"
 
@@ -91,13 +92,14 @@ namespace
 
 	struct BWParameters
 	{
-		float red = 0.0f;
-		float yellow = 0.0f;
-		float green = 0.0f;
-		float cyan = 0.0f;
-		float blue = 0.0f;
-		float magenta = 0.0f;
+		float red = 40.0f;
+		float yellow = 60.0f;
+		float green = 40.0f;
+		float cyan = 60.0f;
+		float blue = 20.0f;
+		float magenta = 80.0f;
 	};
+	static const BWParameters kBWDefault;
 
 	sk_sp<SkShader> CreateBWShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect, BWParameters& params)
 	{
@@ -121,12 +123,20 @@ BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
-	m_RedSlider = m_Container.AddControl<Slider>(40.0f, kMin, kMax, SkString{"Red:"});
-	m_YellowSlider = m_Container.AddControl<Slider>(60.0f, kMin, kMax, SkString{"Yellow:"});
-	m_GreenSlider = m_Container.AddControl<Slider>(40.0f, kMin, kMax, SkString{"Green:"});
-	m_CyanSlider = m_Container.AddControl<Slider>(60.0f, kMin, kMax, SkString{"Cyan:"});
-	m_BlueSlider = m_Container.AddControl<Slider>(20.0f, kMin, kMax, SkString{"Blue:"});
-	m_MagentaSlider = m_Container.AddControl<Slider>(80.0f, kMin, kMax, SkString{"Magenta:"});
+	m_RedSlider = m_Container.AddControl<Slider>(kBWDefault.red, kMin, kMax, SkString{"Red:"});
+	m_YellowSlider = m_Container.AddControl<Slider>(kBWDefault.yellow, kMin, kMax, SkString{"Yellow:"});
+	m_GreenSlider = m_Container.AddControl<Slider>(kBWDefault.green, kMin, kMax, SkString{"Green:"});
+	m_CyanSlider = m_Container.AddControl<Slider>(kBWDefault.cyan, kMin, kMax, SkString{"Cyan:"});
+	m_BlueSlider = m_Container.AddControl<Slider>(kBWDefault.blue, kMin, kMax, SkString{"Blue:"});
+	m_MagentaSlider = m_Container.AddControl<Slider>(kBWDefault.magenta, kMin, kMax, SkString{"Magenta:"});
+	m_Container.AddControl<Button>([this]() {
+		m_RedSlider.lock()->SetValue(kBWDefault.red);
+		m_YellowSlider.lock()->SetValue(kBWDefault.yellow);
+		m_GreenSlider.lock()->SetValue(kBWDefault.green);
+		m_CyanSlider.lock()->SetValue(kBWDefault.cyan);
+		m_BlueSlider.lock()->SetValue(kBWDefault.blue);
+		m_MagentaSlider.lock()->SetValue(kBWDefault.magenta);
+	}, SkString{"Reset"});
 
 	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{BW_SHADER.c_str()});
 	if (!effect.effect)
