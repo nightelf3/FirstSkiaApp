@@ -127,7 +127,7 @@ xcopy /y "$(ProjectDir)resources\*" "$(OutDir)resources\*"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\Skia\build\$(Configuration)</AdditionalLibraryDirectories>
       <AdditionalDependencies>skia.dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
