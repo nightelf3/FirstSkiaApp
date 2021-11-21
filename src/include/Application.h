@@ -4,7 +4,7 @@
 #include "Interfaces/IApplication.h"
 #include "Interfaces/IPlatformWindow.h"
 #include "LayerCollection.h"
-#include "Layers/Utils/FPS.h"
+#include "include/Utils/FPS.h"
 
 class Application : public IApplication
 {
