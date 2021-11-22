@@ -98,7 +98,7 @@ SkScalar Slider::GetHeight() const
 
 bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 {
-	if (!IsPointInRect(x, y, m_Track))
+	if (!IsXInRect(x, m_Track))
 		return false;
 	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 	return true;

@@ -6,4 +6,5 @@
 SkRect GetBounds(SkCanvas* canvas);
 sk_sp<SkImage> LoadImageFromFile(const SkString& filePath);
 
+bool IsXInRect(SkScalar x, const SkRect& rect);
 bool IsPointInRect(SkScalar x, SkScalar y, const SkRect& rect);
