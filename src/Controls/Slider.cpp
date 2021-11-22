@@ -65,9 +65,9 @@ namespace
 	}
 }
 
-Slider::Slider(SkScalar value, SkScalar min, SkScalar max, SkString caption) :
+Slider::Slider(const SliderParams& params, SkString caption) :
 	BaseControl(std::move(caption)),
-	BaseValueControl(value, min, max)
+	BaseValueControl(params)
 {
 }
 
@@ -101,7 +101,7 @@ bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
 	if (InputState::kDown != state)
 		return false;
 
-	SkScalar increment = 0.1f;
+	SkScalar increment = GetParams().m_Increment;
 	if (modifiers.Has(ModifierKey::kShift))
 		increment *= 10.0f;
 	else if (modifiers.Has(ModifierKey::kControl))

@@ -12,6 +12,54 @@ namespace
 	constexpr SkScalar kPanelSize = 300.0f;  // in px
 	constexpr SkScalar kPanelPadding = 10.0f;  // in px
 
+	enum class Controls
+	{
+		kWidth,
+		kHeight,
+		kX,
+		kY,
+		kRadius,
+		kTwist
+	};
+
+	struct SwirlParameters
+	{
+		float width = 0.0f;
+		float height = 0.0f;
+		float x = 0.5f;
+		float y = 0.5f;
+		float radius = 0.75f;
+		float twist = 0.0f;
+	};
+	static const SwirlParameters kSwirlDefault;
+
+	SliderParams CreateSliderParams(Controls control)
+	{
+		SliderParams params;
+		switch (control)
+		{
+		case Controls::kWidth:
+			params.m_Value = kSwirlDefault.width;
+			break;
+		case Controls::kHeight:
+			params.m_Value = kSwirlDefault.height;
+			break;
+		case Controls::kX:
+			params.m_Value = kSwirlDefault.x;
+			break;
+		case Controls::kY:
+			params.m_Value = kSwirlDefault.y;
+			break;
+		case Controls::kRadius:
+			params.m_Value = kSwirlDefault.radius;
+			break;
+		case Controls::kTwist:
+			params.m_Value = kSwirlDefault.twist;
+			break;
+		}
+		return params;
+	}
+
 	const std::string SWIRL_SHADER = R"---(
 		uniform shader texture;
 
@@ -44,17 +92,6 @@ namespace
 			return texture.eval(float2(pixel.x * width, pixel.y * height));
 		})---";
 
-	struct SwirlParameters
-	{
-		float width = 0.0f;
-		float height = 0.0f;
-		float x = 0.5f;
-		float y = 0.5f;
-		float radius = 0.75f;
-		float twist = 0.0f;
-	};
-	static const SwirlParameters kSwirlDefault;
-
 	sk_sp<SkShader> CreateBWShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect, SwirlParameters& params)
 	{
 		if (!effect)
@@ -77,10 +114,10 @@ SwirlLayer::SwirlLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
-	m_XSlider = m_Container.AddControl<Slider>(kSwirlDefault.x, 0.0f, 1.0f, SkString{"X:"});
-	m_YSlider = m_Container.AddControl<Slider>(kSwirlDefault.y, 0.0f, 1.0f, SkString{"Y:"});
-	m_RadiusSlider = m_Container.AddControl<Slider>(kSwirlDefault.radius, 0.0f, 1.0f, SkString{"Radius:"});
-	m_TwistsSlider = m_Container.AddControl<Slider>(kSwirlDefault.twist, -3.0f, 3.0f, SkString{"Twists:"});
+	m_XSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kX), SkString{"X:"});
+	m_YSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kY), SkString{"Y:"});
+	m_RadiusSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRadius), SkString{"Radius:"});
+	m_TwistsSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kTwist), SkString{"Twists:"});
 	m_Container.AddControl<Button>([this]() {
 		m_XSlider.lock()->SetValue(kSwirlDefault.x);
 		m_YSlider.lock()->SetValue(kSwirlDefault.y);

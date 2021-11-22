@@ -3,10 +3,19 @@
 #include "BaseControl.h"
 #include "BaseValueControl.h"
 
-class Slider : public BaseControl, public BaseValueControl
+struct SliderParams : public ValueControlParams
+{
+	SliderParams(SkScalar value = 0.0f, SkScalar min = 0.0f, SkScalar max = 1.0f, SkScalar increment = 0.1f) :
+		ValueControlParams(value, min, max), m_Increment(increment)
+	{}
+
+	SkScalar m_Increment = 0.1f;
+};
+
+class Slider : public BaseControl, public BaseValueControl<SliderParams>
 {
 public:
-	Slider(SkScalar value = 0.0f, SkScalar min = 0.0f, SkScalar max = 1.0f, SkString caption = {});
+	Slider(const SliderParams& params, SkString caption = {});
 	~Slider() override = default;
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;

@@ -9,10 +9,60 @@
 
 namespace
 {
-	constexpr SkScalar kMin = -200.0f;
-	constexpr SkScalar kMax = 300.0f;
 	constexpr SkScalar kPanelSize = 300.0f;  // in px
 	constexpr SkScalar kPanelPadding = 10.0f;  // in px
+
+	enum class Controls
+	{
+		kRed,
+		kYellow,
+		kGreen,
+		kCyan,
+		kBlue,
+		kMagenta
+	};
+
+	struct BWParameters
+	{
+		float red = 40.0f;
+		float yellow = 60.0f;
+		float green = 40.0f;
+		float cyan = 60.0f;
+		float blue = 20.0f;
+		float magenta = 80.0f;
+	};
+	static const BWParameters kBWDefault;
+
+	SliderParams CreateSliderParams(Controls control)
+	{
+		constexpr SkScalar kMin = -200.0f;
+		constexpr SkScalar kMax = 300.0f;
+		static const SliderParams kDefaultParams(0.0f, kMin, kMax, 5.0f);
+
+		SliderParams params = kDefaultParams;
+		switch (control)
+		{
+		case Controls::kRed:
+			params.m_Value = kBWDefault.red;
+			break;
+		case Controls::kYellow:
+			params.m_Value = kBWDefault.yellow;
+			break;
+		case Controls::kGreen:
+			params.m_Value = kBWDefault.green;
+			break;
+		case Controls::kCyan:
+			params.m_Value = kBWDefault.cyan;
+			break;
+		case Controls::kBlue:
+			params.m_Value = kBWDefault.blue;
+			break;
+		case Controls::kMagenta:
+			params.m_Value = kBWDefault.magenta;
+			break;
+		}
+		return params;
+	}
 
 	const std::string BW_SHADER = R"---(
 		uniform shader texture;
@@ -90,17 +140,6 @@ namespace
 			return half4(res, 1.0);
 		})---";
 
-	struct BWParameters
-	{
-		float red = 40.0f;
-		float yellow = 60.0f;
-		float green = 40.0f;
-		float cyan = 60.0f;
-		float blue = 20.0f;
-		float magenta = 80.0f;
-	};
-	static const BWParameters kBWDefault;
-
 	sk_sp<SkShader> CreateBWShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect, BWParameters& params)
 	{
 		if (!effect)
@@ -123,12 +162,12 @@ BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
 	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
 
-	m_RedSlider = m_Container.AddControl<Slider>(kBWDefault.red, kMin, kMax, SkString{"Red:"});
-	m_YellowSlider = m_Container.AddControl<Slider>(kBWDefault.yellow, kMin, kMax, SkString{"Yellow:"});
-	m_GreenSlider = m_Container.AddControl<Slider>(kBWDefault.green, kMin, kMax, SkString{"Green:"});
-	m_CyanSlider = m_Container.AddControl<Slider>(kBWDefault.cyan, kMin, kMax, SkString{"Cyan:"});
-	m_BlueSlider = m_Container.AddControl<Slider>(kBWDefault.blue, kMin, kMax, SkString{"Blue:"});
-	m_MagentaSlider = m_Container.AddControl<Slider>(kBWDefault.magenta, kMin, kMax, SkString{"Magenta:"});
+	m_RedSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRed), SkString{"Red:"});
+	m_YellowSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kYellow), SkString{"Yellow:"});
+	m_GreenSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kGreen), SkString{"Green:"});
+	m_CyanSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kCyan), SkString{"Cyan:"});
+	m_BlueSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kBlue), SkString{"Blue:"});
+	m_MagentaSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kMagenta), SkString{"Magenta:"});
 	m_Container.AddControl<Button>([this]() {
 		m_RedSlider.lock()->SetValue(kBWDefault.red);
 		m_YellowSlider.lock()->SetValue(kBWDefault.yellow);

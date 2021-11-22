@@ -15,7 +15,6 @@
     <ClCompile Include="src\Backgounds\BaseBackgound.cpp" />
     <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp" />
     <ClCompile Include="src\Backgounds\RasterBackgound.cpp" />
-    <ClCompile Include="src\Controls\BaseValueControl.cpp" />
     <ClCompile Include="src\Controls\Focus.cpp" />
     <ClCompile Include="src\Layers\SwirlLayer.cpp" />
     <ClCompile Include="src\Controls\ControlsContainer.cpp" />
