@@ -3,16 +3,42 @@
 
 #include <cstdint>
 
-enum class ModifierKey
+struct ModifierKey
 {
-	kNone = 0,
-	kControl = (1 << 0),
-	kShift = (1 << 1),
+	using TUModifierKey = size_t;
+	enum Modifiers : TUModifierKey
+	{
+		kNone = 0,
+		kControl = (1 << 0),
+		kShift = (1 << 1),
+		kAlt = (1 << 2),
+	};
+
+	ModifierKey(Modifiers key) : m_Key(key) {}
+
+	bool Has(ModifierKey key)
+	{
+		return m_Key & key.m_Key;
+	}
+
+	bool operator ==(ModifierKey key)
+	{
+		return m_Key == key.m_Key;
+	}
+
+	ModifierKey& operator |=(ModifierKey key)
+	{
+		m_Key |= key.m_Key;
+		return *this;
+	}
+
+private:
+	TUModifierKey m_Key;
 };
 
-inline ModifierKey& operator |=(ModifierKey& a, ModifierKey b)
+inline bool operator ==(ModifierKey::Modifiers modifiers, ModifierKey key)
 {
-	return a = static_cast<ModifierKey>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+	return ModifierKey(modifiers) == key;
 }
 
 enum class Key

@@ -13,11 +13,14 @@ namespace
 	ModifierKey get_modifiers()
 	{
 		ModifierKey modifiers = ModifierKey::kNone;
-		if (GetAsyncKeyState(VK_LCONTROL) & 0x8000) {
+		if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
 			modifiers |= ModifierKey::kControl;
 		}
-		if (GetAsyncKeyState(VK_LSHIFT) & 0x8000) {
+		if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
 			modifiers |= ModifierKey::kShift;
+		}
+		if (GetAsyncKeyState(VK_MENU) & 0x8000) {
+			modifiers |= ModifierKey::kAlt;
 		}
 		return modifiers;
 	}
