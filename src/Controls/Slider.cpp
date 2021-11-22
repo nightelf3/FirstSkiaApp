@@ -96,6 +96,34 @@ SkScalar Slider::GetHeight() const
 	return kThumbHeight;
 }
 
+bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
+{
+	if (InputState::kDown != state)
+		return false;
+
+	SkScalar increment = 0.1f;
+	if (modifiers.Has(ModifierKey::kShift))
+		increment *= 10.0f;
+	else if (modifiers.Has(ModifierKey::kControl))
+		increment *= 0.1f;
+	else if (modifiers.Has(ModifierKey::kAlt))
+		increment *= 0.01f;
+
+	switch (key)
+	{
+	case Key::kRight:
+	case Key::kUp:
+		SetValue(GetValue() + increment);
+		break;
+	case Key::kLeft:
+	case Key::kDown:
+		SetValue(GetValue() - increment);
+		break;
+	}
+
+	return true;
+}
+
 bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 {
 	if (!IsXInRect(x, m_Track))

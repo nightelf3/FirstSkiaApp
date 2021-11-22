@@ -8,6 +8,11 @@ BaseControl::BaseControl(SkString caption) :
 {
 }
 
+bool BaseControl::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+{
+	return OnKey(key, state, modifiers);
+}
+
 bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
 	const bool isProcessEvent = m_MouseDown || IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);

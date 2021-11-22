@@ -13,6 +13,7 @@ public:
 	SkScalar GetHeight() const override;
 
 private:
+	bool OnKey(Key key, InputState state, ModifierKey modifiers) override;
 	bool OnMouseDown(int x, int y, ModifierKey modifiers) override;
 	void OnMouseMove(int x, int y, ModifierKey modifiers, bool active) override;
 	void OnMouseUp(int x, int y, ModifierKey modifiers) override;

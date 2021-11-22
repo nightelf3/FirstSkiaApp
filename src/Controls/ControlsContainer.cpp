@@ -34,6 +34,13 @@ void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 	}
 }
 
+bool ControlsContainer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+{
+	if (auto control = Focus::GetFocus())
+		return control->ProcessKey(key, state, modifiers);
+	return false;
+}
+
 bool ControlsContainer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
 	bool processed = false;

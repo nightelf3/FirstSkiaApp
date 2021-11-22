@@ -10,12 +10,15 @@ public:
 	~BaseControl() override;
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override { m_Bounds = bounds; }
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
+	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override final;
+	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override final;
 
 protected:
 	bool IsActive() const { return m_Active; }
 	SkRect GetBounds() const { return m_Bounds; }
 	const SkString& GetCaption() const { return m_Caption; }
+
+	virtual bool OnKey(Key key, InputState state, ModifierKey modifiers) { return false; }
 
 	virtual bool IsSupportInputState(InputState state) const;
 	virtual bool OnMouseDown(int x, int y, ModifierKey modifiers) { return false; }

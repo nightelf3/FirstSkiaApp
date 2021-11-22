@@ -123,6 +123,11 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 	m_Container.Draw(canvas, GetPanelRect(bounds));
 }
 
+bool SwirlLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+{
+	return m_Container.ProcessKey(key, state, modifiers);
+}
+
 bool SwirlLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
 	return m_Container.ProcessMouse(x, y, state, modifiers);

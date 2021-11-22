@@ -173,6 +173,11 @@ void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 	m_Container.Draw(canvas, GetPanelRect(bounds));
 }
 
+bool BlackAndWhiteLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+{
+	return m_Container.ProcessKey(key, state, modifiers);
+}
+
 bool BlackAndWhiteLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
 	return m_Container.ProcessMouse(x, y, state, modifiers);

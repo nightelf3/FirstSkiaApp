@@ -7,6 +7,7 @@ struct IControl
 {
 	virtual ~IControl() = default;
 	virtual void Draw(SkCanvas* canvas, const SkRect& bounds) = 0;
+	virtual bool ProcessKey(Key key, InputState state, ModifierKey modifiers) = 0;
 	virtual bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) = 0;
 
 	virtual SkScalar GetHeight() const = 0;

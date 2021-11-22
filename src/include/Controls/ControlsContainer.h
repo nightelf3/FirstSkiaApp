@@ -17,6 +17,7 @@ public:
 	}
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;
+	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override;
 	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
 	SkScalar GetHeight() const override;
 
