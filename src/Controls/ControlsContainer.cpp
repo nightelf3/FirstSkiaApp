@@ -1,5 +1,6 @@
 #include "include/Controls/ControlsContainer.h"
 #include "include/Utils/DrawUtils.h"
+#include "include/Controls/Focus.h"
 
 #include "include/core/SkCanvas.h"
 
@@ -38,6 +39,8 @@ bool ControlsContainer::ProcessMouse(int x, int y, InputState state, ModifierKey
 	bool processed = false;
 	for (auto& control : m_Controls)
 		processed |= control->ProcessMouse(x, y, state, modifiers);
+	if (InputState::kDown == state && !processed)
+		Focus::SetFocus(nullptr);
 	return processed;
 }
 

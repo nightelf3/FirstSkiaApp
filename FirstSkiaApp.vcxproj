@@ -16,6 +16,7 @@
     <ClCompile Include="src\Backgounds\OpenGLBackgound.cpp" />
     <ClCompile Include="src\Backgounds\RasterBackgound.cpp" />
     <ClCompile Include="src\Controls\BaseValueControl.cpp" />
+    <ClCompile Include="src\Controls\Focus.cpp" />
     <ClCompile Include="src\Layers\SwirlLayer.cpp" />
     <ClCompile Include="src\Controls\ControlsContainer.cpp" />
     <ClCompile Include="src\Controls\Slider.cpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="src\include\Backgounds\OpenGLBackgound.h" />
     <ClInclude Include="src\include\Backgounds\RasterBackgound.h" />
     <ClInclude Include="src\include\Controls\BaseControl.h" />
+    <ClInclude Include="src\include\Controls\Focus.h" />
     <ClInclude Include="src\include\Interfaces\IControlValue.h" />
     <ClInclude Include="src\include\Layers\SwirlLayer.h" />
     <ClInclude Include="src\include\Controls\BaseValueControl.h" />

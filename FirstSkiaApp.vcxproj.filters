@@ -34,6 +34,7 @@
     <ClCompile Include="src\Controls\BaseValueControl.cpp" />
     <ClCompile Include="src\Controls\Button.cpp" />
     <ClCompile Include="src\Utils\DrawUtils.cpp" />
+    <ClCompile Include="src\Controls\Focus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Utils\FPS.h">
@@ -95,6 +96,7 @@
     <ClInclude Include="src\include\Controls\BaseControl.h" />
     <ClInclude Include="src\include\Interfaces\IControlValue.h" />
     <ClInclude Include="src\include\Utils\DrawUtils.h" />
+    <ClInclude Include="src\include\Controls\Focus.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Backgounds">

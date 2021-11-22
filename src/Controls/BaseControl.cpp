@@ -1,5 +1,6 @@
 #include "include/Controls/BaseControl.h"
 #include "include/Utils/Utils.h"
+#include "include/Controls/Focus.h"
 
 BaseControl::~BaseControl() = default;
 BaseControl::BaseControl(SkString caption) :
@@ -9,14 +10,16 @@ BaseControl::BaseControl(SkString caption) :
 
 bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
-	m_Active = m_MouseDown || IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);
-	if (!m_Active)
+	const bool isProcessEvent = m_MouseDown || IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);
+	m_Active = isProcessEvent || Focus::IsInFocus(this);
+	if (!isProcessEvent)
 		return false;
 
 	switch (state)
 	{
 	case InputState::kDown:
 		m_MouseDown = OnMouseDown(x, y, modifiers);
+		Focus::SetFocus(this);
 		break;
 
 	case InputState::kMove:
