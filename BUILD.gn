@@ -1,0 +1,9 @@
+executable("hello") {
+  sources = [
+    "src/init.cpp",
+  ]
+
+  deps = [
+      "skia"
+  ]
+}
