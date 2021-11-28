@@ -1,9 +1,72 @@
-executable("hello") {
+executable("FirstSkApp") {
+  include_dirs = [ "src" ]
+
   sources = [
-    "src/init.cpp",
+    "src/Backgounds/BaseBackgound.cpp",
+    "src/Backgounds/OpenGLBackgound.cpp",
+    "src/Backgounds/RasterBackgound.cpp",
+    "src/Controls/BaseControl.cpp",
+    "src/Controls/Button.cpp",
+    "src/Controls/ControlsContainer.cpp",
+    "src/Controls/Focus.cpp",
+    "src/Controls/Slider.cpp",
+    "src/include/Backgounds/BaseBackgound.h",
+    "src/include/Backgounds/OpenGLBackgound.h",
+    "src/include/Backgounds/RasterBackgound.h",
+    "src/include/Controls/BaseControl.h",
+    "src/include/Controls/BaseValueControl.h",
+    "src/include/Controls/Button.h",
+    "src/include/Controls/ControlsContainer.h",
+    "src/include/Controls/Focus.h",
+    "src/include/Controls/Slider.h",
+    "src/include/Interfaces/IApplication.h",
+    "src/include/Interfaces/IBackground.h",
+    "src/include/Interfaces/IControl.h",
+    "src/include/Interfaces/IControlValue.h",
+    "src/include/Interfaces/ILayer.h",
+    "src/include/Interfaces/IPlatformWindow.h",
+    "src/include/Layers/BaseLayer.h",
+    "src/include/Layers/BlackAndWhiteLayer.h",
+    "src/include/Layers/SwirlLayer.h",
+    "src/include/Utils/DrawUtils.h",
+    "src/include/Utils/FPS.h",
+    "src/include/Utils/Utils.h",
+    "src/include/Application.h",
+    "src/include/LayerCollection.h",
+    "src/include/Types.h",
+    "src/Layers/BlackAndWhiteLayer.cpp",
+    "src/Layers/SwirlLayer.cpp",
+    "src/Utils/DrawUtils.cpp",
+    "src/Utils/FPS.cpp",
+    "src/Utils/Utils.cpp",
+    "src/Application.cpp",
+    "src/LayerCollection.cpp"
   ]
 
+  if (is_win) {
+    sources += [
+      "src/PlatformApplication_win.cpp",
+      "src/PlatformWindow_win.cpp",
+    ]
+    
+    public_configs = [
+      "//build/config/win:unicode",
+      "//build/config/win:nominmax",
+      "//build/config/win:windowed",
+    ]
+
+    libs = [
+      "user32.lib",
+      "gdi32.lib",
+      "opengl32.lib"
+    ]
+
+    defines = [
+      "SK_GL",
+    ]
+  }
+
   deps = [
-      "skia"
+    "//external/skia"
   ]
 }

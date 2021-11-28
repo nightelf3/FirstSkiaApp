@@ -66,7 +66,6 @@ enum class InputState
 };
 
 #ifdef _WIN32
-#define NOMINMAX
 #include <windows.h>
 using WHandle = HWND;
 #else
