@@ -2,5 +2,5 @@
 	path = build
 	url = https://github.com/nightelf3/gn-build
 [submodule "skia"]
-	path = skia
+	path = external/skia/skia
 	url = https://skia.googlesource.com/skia
