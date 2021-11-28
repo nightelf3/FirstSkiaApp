@@ -1,0 +1,96 @@
+# imported_library.gni from https://stackoverflow.com/a/63326374/6292544
+declare_args() {
+    copy_third_library = is_win
+}
+
+template("imported_library") {
+    ## Part1 public config
+    ##--------------------
+    config("${invoker.target_name}_imported") {
+        ldflags = []
+        if (defined(invoker.ldflags)) {
+            ldflags = invoker.ldflags
+        }
+        if (defined(invoker.input_exec)) {
+            inputs = [invoker.input_exec]
+        }
+        if (defined(invoker.include_dirs)) {
+            include_dirs = invoker.include_dirs
+            # print("INCLUDE: $include_dirs")
+        }
+        if (defined(invoker.lib_dirs)) {
+            lib_dirs = invoker.lib_dirs
+            foreach(p, invoker.lib_dirs) {
+                if (is_linux || is_mac) {
+                    if (build_type == "debug") {
+                        rpath_new = rebase_path(".", root_out_dir)
+                        ldflags += ["-Wl,-rpath=\$ORIGIN/" + rpath_new + "/" + p]
+                        # print(ldflags)
+                    } else {
+                        print("Note: do not set RUNPATH for $target_name when build_type=$build_type.")
+                    }
+                }
+            }
+        }
+        if (defined(invoker.libs)) {
+            libs = invoker.libs
+        }
+        if (defined(invoker.defines)) {
+            defines = invoker.defines
+        }
+        if (defined(invoker.cflags)) {
+            cflags = invoker.cflags
+        }
+        if (defined(invoker.cflags_c)) {
+            cflags_c = invoker.cflags_c
+        }
+        if (defined(invoker.cflags_cc)) {
+            cflags_cc = invoker.cflags_cc
+        }
+        
+        visibility = [ ":${invoker.target_name}" ]
+    } # end config({$target_name}_imported)
+
+
+    ## Part2 copy action
+    ##------------------
+    require_copy_action = defined(invoker.runtimes) && copy_third_library
+
+    if (defined(invoker.runtime_dest)) { print("${invoker.runtime_dest}") }
+
+    if (require_copy_action) {
+        copy("$target_name" + "_copy") {
+            sources = invoker.runtimes
+            if (defined(invoker.runtime_dest)){
+                folder = invoker.runtime_dest
+                outputs = [ "$root_out_dir/$folder/{{source_file_part}}" ]
+            }else {
+                outputs = [ "$root_out_dir/{{source_file_part}}" ]
+            }
+            visibility = [ ":$target_name" ]
+        }
+    }
+
+
+    ## Part3 
+    ##------------------
+    group(target_name) {
+        public_configs = [":$target_name" + "_imported"]
+        # if (copy_third_library && defined(invoker.lib_dirs)) {
+        #     deps = [":$target_name" + "_copy"]
+        # }
+        if (defined(invoker.public_deps)) {
+            public_deps = invoker.public_deps
+        }
+        if (defined(invoker.runtimes)) {
+            data = invoker.runtimes
+        }
+        if (defined(invoker.metadata)) {
+            metadata = invoker.metadata
+        }
+        if (require_copy_action) {
+            deps = [":$target_name" + "_copy"]
+        }
+    }
+
+} ## end template
