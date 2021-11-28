@@ -1,0 +1,14 @@
+
+import("//external/imported_library.gni")
+
+build_type = "Release"
+if (is_debug) {
+  build_type = "Debug"
+}
+
+imported_library("skia") {
+  include_dirs = [ "//external/skia/skia" ]
+  lib_dirs = [ "//external/skia/bin/$build_type" ]
+  libs = [ "skia.dll.lib" ]
+  runtimes = [ "//external/skia/bin/$build_type/skia.dll" ]
+}
