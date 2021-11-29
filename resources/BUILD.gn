@@ -1,0 +1,10 @@
+import("//build/utils/configuration.gni")
+
+copy("resources") {
+  sources = [
+    "4k.jpg",
+    "8k.jpg",
+    "doge.png",
+  ]
+  outputs = [ "$root_out_dir/resources/{{source_file_part}}" ]
+}
