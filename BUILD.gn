@@ -42,6 +42,10 @@ executable("FirstSkApp") {
     "src/Application.cpp",
     "src/LayerCollection.cpp"
   ]
+  
+  public_configs = [
+    "//external/skia:opengl"
+  ]
 
   if (is_win) {
     sources += [
@@ -49,7 +53,7 @@ executable("FirstSkApp") {
       "src/PlatformWindow_win.cpp",
     ]
     
-    public_configs = [
+    public_configs += [
       "//build/config/win:unicode",
       "//build/config/win:nominmax",
       "//build/config/win:windowed",
@@ -57,12 +61,7 @@ executable("FirstSkApp") {
 
     libs = [
       "user32.lib",
-      "gdi32.lib",
-      "opengl32.lib"
-    ]
-
-    defines = [
-      "SK_GL",
+      "gdi32.lib"
     ]
   }
 
