@@ -66,6 +66,7 @@ executable("FirstSkApp") {
   }
 
   deps = [
-    "//external/skia"
+    "//external/skia",
+    "//resources"
   ]
 }
