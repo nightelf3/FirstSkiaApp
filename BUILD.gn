@@ -1,4 +1,4 @@
-executable("FirstSkApp") {
+executable("FirstSkiaApp") {
   include_dirs = [ "src" ]
 
   sources = [
