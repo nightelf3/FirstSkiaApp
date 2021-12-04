@@ -16,6 +16,7 @@ Windows only project (at least, for now) to play with Skia.
 - Build VSProject:
     - [1] Generate JSON: ```build/bin/gn gen out/Debug --ide=json```
     - [2] Build solution: ```python build/bin/genvcproj.py out/Debug/project.json```
+    - P.S. use ```Build > Rebuild Solution``` to generate GN
 - Update Skia:
     - [1] Update submosule: ```git submodule update --remote external/skia/skia```
     - [2] Update DLLs: ```python external/skia/bin/rebuild.py```
