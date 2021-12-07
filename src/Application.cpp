@@ -4,10 +4,15 @@
 #include "include/Backgounds/RasterBackgound.h"
 #include "include/Backgounds/OpenGLBackgound.h"
 
+#include "include/core/SkGraphics.h"
+
 Application::Application()
 {
 	m_Window = CreatePlatformWindow(this);
 	m_Window->SetBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
+
+	SkGraphics::Init();
+	SkGraphics::AllowJIT();
 }
 
 void Application::Show()

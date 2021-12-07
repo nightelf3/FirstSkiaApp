@@ -12,6 +12,7 @@ def GetArgs(is_debug):
     "skia_use_system_icu": False,
     "skia_use_system_harfbuzz": False,
     "skia_use_gl": True,
+    "skia_enable_skvm_jit_when_possible": True,
     "is_debug": is_debug,
     "is_official_build": not is_debug
   }
