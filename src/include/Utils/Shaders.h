@@ -6,12 +6,12 @@ namespace Shaders
 {
 struct BWParameters
 {
-	float red = 40.0f;
-	float yellow = 60.0f;
-	float green = 40.0f;
-	float cyan = 60.0f;
-	float blue = 20.0f;
-	float magenta = 80.0f;
+	float red = 0.4f;
+	float yellow = 0.6f;
+	float green = 0.4f;
+	float cyan = 0.6f;
+	float blue = 0.2f;
+	float magenta = 0.8f;
 };
 constexpr BWParameters kBWDefault;
 

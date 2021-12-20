@@ -29,47 +29,19 @@ half4 main(float2 p) {
 	base = rgb2hsv(base);
 
 	float hueInterval = 1.0 / 6.0;
-	float startBrightness = 0.0;
-	float endBrightness = 0.0;
-	if (0.0 <= base.x && base.x < hueInterval)
-	{
-			startBrightness = red;
-			endBrightness = yellow;
-	}
-	else if (hueInterval <= base.x && base.x < 2.0 * hueInterval)
-	{
-			startBrightness = yellow;
-			endBrightness = green;
-	}
-	else if (2.0 * hueInterval <= base.x && base.x < 3.0 * hueInterval)
-	{
-			startBrightness = green;
-			endBrightness = cyan;
-	}
-	else if (3.0 * hueInterval <= base.x && base.x < 4.0 * hueInterval)
-	{
-			startBrightness = cyan;
-			endBrightness = blue;
-	}
-	else if (4.0 * hueInterval <= base.x && base.x < 5.0 * hueInterval)
-	{
-			startBrightness = blue;
-			endBrightness = magenta;
-	}
-	else
-	{
-			startBrightness = magenta;
-			endBrightness = red;
-	}
+	half2 region = mix(half2(red, yellow),
+		mix(half2(yellow, green),
+			mix(half2(green, cyan),
+				mix(half2(cyan, blue),
+					mix(half2(blue, magenta),
+						half2(magenta, red),
+						step(5.0 * hueInterval, base.x)),
+					step(4.0 * hueInterval, base.x)),
+				step(3.0 * hueInterval, base.x)),
+			step(2.0 * hueInterval, base.x)),
+		step(hueInterval, base.x));
 
-	float fStartHue = (hueInterval - mod(base.x, hueInterval)) / hueInterval * 100.0;
-	float fSaturation = base.y * 100.0;
-	float fBrightness = base.z * 100.0;
-
-	float fNewBrightness = (fStartHue * startBrightness / 100.0) + (100.0 - fStartHue) * (endBrightness / 100.0);
-	fNewBrightness = ((100.0 - fSaturation) * fBrightness) / 100.0 + ((((fNewBrightness * fSaturation) / 100.0) * fBrightness) / 100.0);
-	fNewBrightness = clamp(fNewBrightness / 100.0, 0.0, 1.0);
-
-	half3 res = hsv2rgb(half3(0.0, 0.0, fNewBrightness));
-	return half4(res, 1.0);
+	float hue = (hueInterval - mod(base.x, hueInterval)) / hueInterval;
+	float brightness = mix(base.z, mix(region.y, region.x, hue) * base.z, base.y);
+	return half4(hsv2rgb(half3(0.0, 0.0, brightness)), 1.0);
 }

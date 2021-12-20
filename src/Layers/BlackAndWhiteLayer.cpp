@@ -23,9 +23,9 @@ namespace
 
 	SliderParams CreateSliderParams(Controls control)
 	{
-		constexpr SkScalar kMin = -200.0f;
-		constexpr SkScalar kMax = 300.0f;
-		static const SliderParams kDefaultParams(0.0f, kMin, kMax, 5.0f);
+		constexpr SkScalar kMin = -2.0f;
+		constexpr SkScalar kMax = 3.0f;
+		static const SliderParams kDefaultParams(0.0f, kMin, kMax, 0.1f);
 
 		SliderParams params = kDefaultParams;
 		switch (control)
