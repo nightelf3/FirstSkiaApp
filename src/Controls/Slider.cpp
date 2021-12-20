@@ -35,7 +35,7 @@ namespace
 
 	SkScalar GetValueFromPos(const SkRect& bounds, SkScalar x, SkScalar min, SkScalar max)
 	{
-		return std::clamp((x - bounds.left()) / bounds.width(), 0.0f, 1.0f) * (max - min) + min ;
+		return std::clamp((x - bounds.left()) / bounds.width(), 0.0f, 1.0f) * (max - min) + min;
 	}
 
 	SkString ToString(SkScalar value)
@@ -126,7 +126,7 @@ bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
 
 bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 {
-	if (!Utils::IsXInRect(x, m_Track))
+	if (!Utils::IsXInRect(x, m_Track.makeOutset(kThumbWidth / 2.0f, 0.0f)))
 		return false;
 	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 	return true;
