@@ -15,8 +15,6 @@ namespace
 
 	enum class Controls
 	{
-		kWidth,
-		kHeight,
 		kX,
 		kY,
 		kRadius,
@@ -28,12 +26,6 @@ namespace
 		SliderParams params;
 		switch (control)
 		{
-		case Controls::kWidth:
-			params.m_Value = Shaders::kSwirlDefault.width;
-			break;
-		case Controls::kHeight:
-			params.m_Value = Shaders::kSwirlDefault.height;
-			break;
 		case Controls::kX:
 			params.m_Value = Shaders::kSwirlDefault.x;
 			break;
