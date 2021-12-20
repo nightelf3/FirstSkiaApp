@@ -1,11 +1,21 @@
 #pragma once
 
 #include "include/Interfaces/IControl.h"
+#include "include/Utils/DrawUtils.h"
 #include <vector>
+
+struct ContainerParams
+{
+	SkScalar width = -1.0f;  // -1.0f means full width
+	SkScalar padding = 0.0f;
+	SkScalar itemsSpacing = 4.0f;
+	DrawUtils::DrawParameters drawParams;
+};
 
 class ControlsContainer : public IControl
 {
 public:
+	ControlsContainer(const ContainerParams& params);
 	~ControlsContainer() override = default;
 
 	template<typename T, class... TArgs>
@@ -22,7 +32,8 @@ public:
 	SkScalar GetHeight() const override;
 
 private:
-	SkRect GetPanelRect(const SkRect& bounds) const;
+	SkRect GetPanelRect(SkRect bounds) const;
 
+	ContainerParams m_Params;
 	std::vector<std::shared_ptr<IControl>> m_Controls;
 };

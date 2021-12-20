@@ -1,5 +1,4 @@
 #include "include/Controls/ControlsContainer.h"
-#include "include/Utils/DrawUtils.h"
 #include "include/Controls/Focus.h"
 
 #include "include/core/SkCanvas.h"
@@ -7,22 +6,19 @@
 namespace
 {
 	constexpr SkScalar kPanelRadius = 10.0f;  // in px
-	constexpr SkScalar kPanelPadding = 10.0f;  // in px
-	constexpr SkScalar kControlPadding = 4.0f;  // in px
+}
 
-	const DrawUtils::DrawParameters& GetDrawParameters()
-	{
-		static DrawUtils::DrawParameters params{SkColors::kDkGray.toSkColor() , SkColors::kGray.toSkColor()};
-		return params;
-	}
+ControlsContainer::ControlsContainer(const ContainerParams& params) :
+	m_Params(params)
+{
 }
 
 void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 {
 	const SkRect panelRect = GetPanelRect(bounds);
-	DrawUtils::DrawRoundRect(canvas, panelRect, kPanelRadius, kPanelRadius, GetDrawParameters());
+	DrawUtils::DrawRoundRect(canvas, panelRect, kPanelRadius, kPanelRadius, m_Params.drawParams);
 
-	const SkRect controlsRect = panelRect.makeInset(kPanelPadding, kPanelPadding);
+	const SkRect controlsRect = panelRect.makeInset(m_Params.padding, m_Params.padding);
 	SkAutoCanvasRestore guard(canvas, true);
 	canvas->clipRect(controlsRect.makeOutset(1.0f, 1.0f));  // fix AA issue
 
@@ -30,7 +26,7 @@ void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 	for (auto& control : m_Controls)
 	{
 		control->Draw(canvas, SkRect::MakeXYWH(controlsRect.left(), y, controlsRect.width(), control->GetHeight()));
-		y += control->GetHeight() + kControlPadding;
+		y += control->GetHeight() + m_Params.itemsSpacing;
 	}
 }
 
@@ -59,11 +55,13 @@ SkScalar ControlsContainer::GetHeight() const
 	SkScalar height = 0.0f;
 	for (auto& control : m_Controls)
 		height += control->GetHeight();
-	return height + kControlPadding * (m_Controls.size() - 1) + kPanelPadding * 2.0f;
+	return height + m_Params.itemsSpacing * (m_Controls.size() - 1) + m_Params.padding * 2.0f;
 }
 
-SkRect ControlsContainer::GetPanelRect(const SkRect& bounds) const
+SkRect ControlsContainer::GetPanelRect(SkRect bounds) const
 {
+	if (m_Params.width >= 0.0f)
+		bounds.fLeft = bounds.right() - m_Params.width;
 	return SkRect::MakeXYWH(bounds.left(), bounds.top(), bounds.width(),
 		std::min(bounds.height(), GetHeight()));
 }

@@ -1,6 +1,7 @@
 #include "include/Layers/BlackAndWhiteLayer.h"
 #include "include/Utils/Shaders.h"
 #include "include/Utils/Utils.h"
+#include "include/Utils/ThemeUtils.h"
 #include "include/Controls/Slider.h"
 #include "include/Controls/Button.h"
 
@@ -8,9 +9,6 @@
 
 namespace
 {
-	constexpr SkScalar kPanelSize = 300.0f;  // in px
-	constexpr SkScalar kPanelPadding = 10.0f;  // in px
-
 	enum class Controls
 	{
 		kRed,
@@ -51,25 +49,21 @@ namespace
 		}
 		return params;
 	}
-
-	SkRect GetPanelRect(SkRect bounds)
-	{
-		bounds.fLeft = bounds.fRight - kPanelSize;
-		return bounds.makeInset(kPanelPadding, kPanelPadding);
-	}
 }
 
-BlackAndWhiteLayer::BlackAndWhiteLayer()
+BlackAndWhiteLayer::BlackAndWhiteLayer() :
+	m_Container(ThemeUtils::GetRightContainerParams())
 {
 	m_Image = Utils::LoadImageFromFile(SkString{"resources/4k.jpg"});
 
-	m_RedSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRed), SkString{"Red:"});
-	m_YellowSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kYellow), SkString{"Yellow:"});
-	m_GreenSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kGreen), SkString{"Green:"});
-	m_CyanSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kCyan), SkString{"Cyan:"});
-	m_BlueSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kBlue), SkString{"Blue:"});
-	m_MagentaSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kMagenta), SkString{"Magenta:"});
-	m_Container.AddControl<Button>([this]() {
+	auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
+	m_RedSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kRed), SkString{"Red:"});
+	m_YellowSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kYellow), SkString{"Yellow:"});
+	m_GreenSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kGreen), SkString{"Green:"});
+	m_CyanSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kCyan), SkString{"Cyan:"});
+	m_BlueSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kBlue), SkString{"Blue:"});
+	m_MagentaSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kMagenta), SkString{"Magenta:"});
+	effectContainer.lock()->AddControl<Button>([this]() {
 		m_RedSlider.lock()->SetValue(Shaders::kBWDefault.red);
 		m_YellowSlider.lock()->SetValue(Shaders::kBWDefault.yellow);
 		m_GreenSlider.lock()->SetValue(Shaders::kBWDefault.green);
@@ -108,7 +102,7 @@ void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 	}
 
 	// draw controls
-	m_Container.Draw(canvas, GetPanelRect(bounds));
+	m_Container.Draw(canvas, bounds);
 }
 
 bool BlackAndWhiteLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)

@@ -31,6 +31,7 @@ executable("FirstSkiaApp") {
     "src/include/Utils/DrawUtils.h",
     "src/include/Utils/FPS.h",
     "src/include/Utils/Shaders.h",
+    "src/include/Utils/ThemeUtils.h",
     "src/include/Utils/Utils.h",
     "src/include/Application.h",
     "src/include/LayerCollection.h",
@@ -40,6 +41,7 @@ executable("FirstSkiaApp") {
     "src/Utils/DrawUtils.cpp",
     "src/Utils/FPS.cpp",
     "src/Utils/Shaders.cpp",
+    "src/Utils/ThemeUtils.cpp",
     "src/Utils/Utils.cpp",
     "src/Application.cpp",
     "src/LayerCollection.cpp"

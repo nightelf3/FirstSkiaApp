@@ -1,18 +1,12 @@
 #include "include/Layers/SwirlLayer.h"
 #include "include/Utils/Shaders.h"
 #include "include/Utils/Utils.h"
+#include "include/Utils/ThemeUtils.h"
 #include "include/Controls/Slider.h"
 #include "include/Controls/Button.h"
 
-#include "include/core/SkImage.h"
-
-#include <iostream>
-
 namespace
 {
-	constexpr SkScalar kPanelSize = 300.0f;  // in px
-	constexpr SkScalar kPanelPadding = 10.0f;  // in px
-
 	enum class Controls
 	{
 		kX,
@@ -43,23 +37,18 @@ namespace
 		}
 		return params;
 	}
-
-	SkRect GetPanelRect(SkRect bounds)
-	{
-		bounds.fLeft = bounds.fRight - kPanelSize;
-		return bounds.makeInset(kPanelPadding, kPanelPadding);
-	}
 }
 
-SwirlLayer::SwirlLayer()
+SwirlLayer::SwirlLayer() : m_Container(ThemeUtils::GetRightContainerParams())
 {
 	m_Image = Utils::LoadImageFromFile(SkString{"resources/4k.jpg"});
 
-	m_XSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kX), SkString{"X:"});
-	m_YSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kY), SkString{"Y:"});
-	m_RadiusSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRadius), SkString{"Radius:"});
-	m_TwistsSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kTwist), SkString{"Twists:"});
-	m_Container.AddControl<Button>([this]() {
+	auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
+	m_XSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kX), SkString{"X:"});
+	m_YSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kY), SkString{"Y:"});
+	m_RadiusSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kRadius), SkString{"Radius:"});
+	m_TwistsSlider = effectContainer.lock()->AddControl<Slider>(CreateSliderParams(Controls::kTwist), SkString{"Twists:"});
+	effectContainer.lock()->AddControl<Button>([this]() {
 		m_XSlider.lock()->SetValue(Shaders::kSwirlDefault.x);
 		m_YSlider.lock()->SetValue(Shaders::kSwirlDefault.y);
 		m_RadiusSlider.lock()->SetValue(Shaders::kSwirlDefault.radius);
@@ -96,7 +85,7 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 	}
 
 	// draw controls
-	m_Container.Draw(canvas, GetPanelRect(bounds));
+	m_Container.Draw(canvas, bounds);
 }
 
 bool SwirlLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
