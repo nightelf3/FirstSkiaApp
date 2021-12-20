@@ -15,16 +15,9 @@ half4 main(float2 p) {
 	float pixelLength = length(pixel);
 
 	float swirlAmount = 1.0 - (pixelLength / swirlRadius);
-	if (swirlAmount > 0.0)
-	{
-		float pixelAngle = atan(pixel.y, pixel.x) + swirlTwists * swirlAmount * PI * 2.0;
-		pixel.x = cos(pixelAngle) * pixelLength + swirlCenter.x;
-		pixel.y = sin(pixelAngle) * pixelLength + swirlCenter.y;
-	}
-	else
-	{
-		pixel = float2(p.x / width, p.y / height);
-	}
+	float pixelAngle = atan(pixel.y, pixel.x) + swirlTwists * swirlAmount * PI * 2.0;
+	pixel.x = mix(cos(pixelAngle) * pixelLength + swirlCenter.x, p.x / width, step(swirlAmount, 0.0));
+	pixel.y = mix(sin(pixelAngle) * pixelLength + swirlCenter.y, p.y / height, step(swirlAmount, 0.0));
 
 	return texture.eval(float2(pixel.x * width, pixel.y * height));
 }
