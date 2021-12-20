@@ -126,7 +126,7 @@ bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
 
 bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 {
-	if (!IsXInRect(x, m_Track))
+	if (!Utils::IsXInRect(x, m_Track))
 		return false;
 	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 	return true;

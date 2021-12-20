@@ -160,7 +160,7 @@ namespace
 
 BlackAndWhiteLayer::BlackAndWhiteLayer()
 {
-	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
+	m_Image = Utils::LoadImageFromFile(SkString("resources/4k.jpg"));
 
 	m_RedSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRed), SkString{"Red:"});
 	m_YellowSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kYellow), SkString{"Yellow:"});
@@ -187,7 +187,7 @@ void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 {
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
-	const SkRect bounds = GetBounds(canvas);
+	const SkRect bounds = Utils::GetBounds(canvas);
 
 	if (m_Effect)
 	{

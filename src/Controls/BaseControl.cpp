@@ -15,7 +15,7 @@ bool BaseControl::ProcessKey(Key key, InputState state, ModifierKey modifiers)
 
 bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
 {
-	const bool isProcessEvent = m_MouseDown || IsSupportInputState(state) && IsPointInRect(x, y, m_Bounds);
+	const bool isProcessEvent = m_MouseDown || IsSupportInputState(state) && Utils::IsPointInRect(x, y, m_Bounds);
 	m_Active = isProcessEvent || Focus::IsInFocus(this);
 	if (!isProcessEvent)
 		return false;

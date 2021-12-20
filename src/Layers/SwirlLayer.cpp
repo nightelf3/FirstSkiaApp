@@ -112,7 +112,7 @@ namespace
 
 SwirlLayer::SwirlLayer()
 {
-	m_Image = LoadImageFromFile(SkString("resources/4k.jpg"));
+	m_Image = Utils::LoadImageFromFile(SkString("resources/4k.jpg"));
 
 	m_XSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kX), SkString{"X:"});
 	m_YSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kY), SkString{"Y:"});
@@ -135,7 +135,7 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 {
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
-	const SkRect bounds = GetBounds(canvas);
+	const SkRect bounds = Utils::GetBounds(canvas);
 
 	if (m_Effect)
 	{
