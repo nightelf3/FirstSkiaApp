@@ -3,11 +3,6 @@
 #include "include/Interfaces/IControl.h"
 #include "include/core/SkString.h"
 
-struct ControlParams
-{
-	SkString m_Caption;
-};
-
 class BaseControl : public IControl
 {
 public:

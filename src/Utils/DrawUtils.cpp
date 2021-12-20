@@ -71,7 +71,7 @@ SkFont DrawUtils::GetFont()
 {
 	sk_sp<SkFontMgr> fontManager = SkFontMgr::RefDefault();
 	sk_sp<SkTypeface> typeface(fontManager->matchFamilyStyle(nullptr, {}));
-	return SkFont{ typeface, 11 };
+	return SkFont{typeface, 11};
 }
 
 void DrawUtils::DrawSimpleText(SkCanvas* canvas, const SkString& str, const SkPoint& pt, const SkPaint& paint)
