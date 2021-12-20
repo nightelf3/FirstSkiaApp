@@ -1,4 +1,5 @@
 #include "include/Layers/SwirlLayer.h"
+#include "include/Utils/Shaders.h"
 #include "include/Utils/Utils.h"
 #include "include/Controls/Slider.h"
 #include "include/Controls/Button.h"
@@ -22,85 +23,33 @@ namespace
 		kTwist
 	};
 
-	struct SwirlParameters
-	{
-		float width = 0.0f;
-		float height = 0.0f;
-		float x = 0.5f;
-		float y = 0.5f;
-		float radius = 0.75f;
-		float twist = 0.0f;
-	};
-	static const SwirlParameters kSwirlDefault;
-
 	SliderParams CreateSliderParams(Controls control)
 	{
 		SliderParams params;
 		switch (control)
 		{
 		case Controls::kWidth:
-			params.m_Value = kSwirlDefault.width;
+			params.m_Value = Shaders::kSwirlDefault.width;
 			break;
 		case Controls::kHeight:
-			params.m_Value = kSwirlDefault.height;
+			params.m_Value = Shaders::kSwirlDefault.height;
 			break;
 		case Controls::kX:
-			params.m_Value = kSwirlDefault.x;
+			params.m_Value = Shaders::kSwirlDefault.x;
 			break;
 		case Controls::kY:
-			params.m_Value = kSwirlDefault.y;
+			params.m_Value = Shaders::kSwirlDefault.y;
 			break;
 		case Controls::kRadius:
-			params.m_Value = kSwirlDefault.radius;
+			params.m_Value = Shaders::kSwirlDefault.radius;
 			break;
 		case Controls::kTwist:
-			params.m_Value = kSwirlDefault.twist;
+			params.m_Min = -2.0;
+			params.m_Max = 2.0;
+			params.m_Value = Shaders::kSwirlDefault.twist;
 			break;
 		}
 		return params;
-	}
-
-	const std::string SWIRL_SHADER = R"---(
-		uniform shader texture;
-
-		uniform float width;
-		uniform float height;
-		uniform float swirlX;
-		uniform float swirlY;
-		uniform float swirlRadius;
-		uniform float swirlTwists;
-
-		const float PI = 3.14159265359;
-
-		half4 main(float2 p) {
-			float2 swirlCenter = float2(swirlX, swirlY);
-			float2 pixel = float2(p.x / width, p.y / height) - swirlCenter;
-			float pixelLength = length(pixel);
-
-			float swirlAmount = 1.0 - (pixelLength / swirlRadius);
-			if (swirlAmount > 0.0)
-			{
-				float pixelAngle = atan(pixel.y, pixel.x) + swirlTwists * swirlAmount * PI * 2.0;
-				pixel.x = cos(pixelAngle) * pixelLength + swirlCenter.x;
-				pixel.y = sin(pixelAngle) * pixelLength + swirlCenter.y;
-			}
-			else
-			{
-				pixel = float2(p.x / width, p.y / height);
-			}
-
-			return texture.eval(float2(pixel.x * width, pixel.y * height));
-		})---";
-
-	sk_sp<SkShader> CreateBWShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect, SwirlParameters& params)
-	{
-		if (!effect)
-			return nullptr;
-
-		sk_sp<SkShader> pColorizerShader = image->makeShader(SkTileMode::kDecal, SkTileMode::kDecal, {}, SkMatrix::I());
-		sk_sp<SkData> dataInput = SkData::MakeWithCopy(&params, sizeof(SwirlParameters));
-		sk_sp<SkShader> children[] = { pColorizerShader };
-		return effect->makeShader(dataInput, children, 1, nullptr, false);
 	}
 
 	SkRect GetPanelRect(SkRect bounds)
@@ -112,23 +61,21 @@ namespace
 
 SwirlLayer::SwirlLayer()
 {
-	m_Image = Utils::LoadImageFromFile(SkString("resources/4k.jpg"));
+	m_Image = Utils::LoadImageFromFile(SkString{"resources/4k.jpg"});
 
 	m_XSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kX), SkString{"X:"});
 	m_YSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kY), SkString{"Y:"});
 	m_RadiusSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kRadius), SkString{"Radius:"});
 	m_TwistsSlider = m_Container.AddControl<Slider>(CreateSliderParams(Controls::kTwist), SkString{"Twists:"});
 	m_Container.AddControl<Button>([this]() {
-		m_XSlider.lock()->SetValue(kSwirlDefault.x);
-		m_YSlider.lock()->SetValue(kSwirlDefault.y);
-		m_RadiusSlider.lock()->SetValue(kSwirlDefault.radius);
-		m_TwistsSlider.lock()->SetValue(kSwirlDefault.twist);
+		m_XSlider.lock()->SetValue(Shaders::kSwirlDefault.x);
+		m_YSlider.lock()->SetValue(Shaders::kSwirlDefault.y);
+		m_RadiusSlider.lock()->SetValue(Shaders::kSwirlDefault.radius);
+		m_TwistsSlider.lock()->SetValue(Shaders::kSwirlDefault.twist);
 	}, SkString{"Reset"});
 
-	const SkRuntimeEffect::Result effect = SkRuntimeEffect::MakeForShader(SkString{SWIRL_SHADER.c_str()});
-	if (!effect.effect)
-		std::cerr << effect.errorText.c_str();
-	m_Effect = effect.effect;
+	auto [effect, error] = Shaders::LoadFromFile(SkString{"resources/shaders/Swirl.sksl"});
+	m_Effect = effect;
 }
 
 void SwirlLayer::Draw(SkCanvas* canvas)
@@ -143,7 +90,7 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 		const SkRect imageRect = SkRect::MakeWH(m_Image->width(), m_Image->height());
 		canvas->setMatrix(SkMatrix::RectToRect(imageRect, bounds, SkMatrix::kCenter_ScaleToFit));
 
-		SwirlParameters params;
+		Shaders::SwirlParameters params;
 		params.width = imageRect.width();
 		params.height = imageRect.height();
 		params.x = m_XSlider.lock()->GetValue();
@@ -152,7 +99,7 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 		params.twist = m_TwistsSlider.lock()->GetValue();
 
 		SkPaint paint;
-		paint.setShader(CreateBWShader(m_Image, m_Effect, params));
+		paint.setShader(Shaders::CreateShader(m_Image, m_Effect, params));
 		canvas->drawPaint(paint);
 	}
 

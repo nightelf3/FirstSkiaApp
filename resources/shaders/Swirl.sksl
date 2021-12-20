@@ -1,0 +1,30 @@
+uniform shader texture;
+
+uniform float width;
+uniform float height;
+uniform float swirlX;
+uniform float swirlY;
+uniform float swirlRadius;
+uniform float swirlTwists;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 p) {
+	float2 swirlCenter = float2(swirlX, swirlY);
+	float2 pixel = float2(p.x / width, p.y / height) - swirlCenter;
+	float pixelLength = length(pixel);
+
+	float swirlAmount = 1.0 - (pixelLength / swirlRadius);
+	if (swirlAmount > 0.0)
+	{
+		float pixelAngle = atan(pixel.y, pixel.x) + swirlTwists * swirlAmount * PI * 2.0;
+		pixel.x = cos(pixelAngle) * pixelLength + swirlCenter.x;
+		pixel.y = sin(pixelAngle) * pixelLength + swirlCenter.y;
+	}
+	else
+	{
+		pixel = float2(p.x / width, p.y / height);
+	}
+
+	return texture.eval(float2(pixel.x * width, pixel.y * height));
+}

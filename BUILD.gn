@@ -30,6 +30,7 @@ executable("FirstSkiaApp") {
     "src/include/Layers/SwirlLayer.h",
     "src/include/Utils/DrawUtils.h",
     "src/include/Utils/FPS.h",
+    "src/include/Utils/Shaders.h",
     "src/include/Utils/Utils.h",
     "src/include/Application.h",
     "src/include/LayerCollection.h",
@@ -38,11 +39,12 @@ executable("FirstSkiaApp") {
     "src/Layers/SwirlLayer.cpp",
     "src/Utils/DrawUtils.cpp",
     "src/Utils/FPS.cpp",
+    "src/Utils/Shaders.cpp",
     "src/Utils/Utils.cpp",
     "src/Application.cpp",
     "src/LayerCollection.cpp"
   ]
-  
+
   public_configs = [
     "//external/skia:opengl"
   ]
@@ -52,7 +54,7 @@ executable("FirstSkiaApp") {
       "src/PlatformApplication_win.cpp",
       "src/PlatformWindow_win.cpp",
     ]
-    
+
     public_configs += [
       "//build/config/win:unicode",
       "//build/config/win:nominmax",
