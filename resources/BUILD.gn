@@ -8,5 +8,5 @@ copy("resources") {
     "shaders/BlackAndWhite.sksl",
     "shaders/Swirl.sksl",
   ]
-  outputs = [ "$root_out_dir/resources/{{source_file_part}}" ]
+  outputs = [ "$root_out_dir/{{source}}" ]
 }
