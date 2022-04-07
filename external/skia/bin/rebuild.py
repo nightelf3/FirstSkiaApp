@@ -12,7 +12,7 @@ def GetArgs(is_debug):
     "skia_use_system_icu": False,
     "skia_use_system_harfbuzz": False,
     "skia_use_gl": True,
-    "skia_enable_skvm_jit_when_possible": True,
+    #"skia_enable_skvm_jit_when_possible": True,
     "is_debug": is_debug,
     "is_official_build": not is_debug
   }
@@ -22,6 +22,8 @@ def CopyDlls(skia_root, is_debug):
   root_src = "{}/out/{}".format(skia_root, "Debug" if is_debug else "Release")
   root_dst = "{}/../bin/{}".format(skia_root, "Debug" if is_debug else "Release")
   files = [ "skia.dll", "skia.dll.lib" ]
+  if (is_debug):
+    files += [ "skia.dll.pdb" ]
   for file in files:
     copyfile("{}/{}".format(root_src, file), "{}/{}".format(root_dst, file))
 
