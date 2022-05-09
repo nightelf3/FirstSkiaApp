@@ -1,0 +1,3 @@
+float4 main(float2 p) {
+	return float4(max(abs(p.x), abs(p.y)), 0, 0, 0);
+}

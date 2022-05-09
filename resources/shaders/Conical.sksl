@@ -1,0 +1,4 @@
+float4 main(float2 p) {
+	float angle = atan(-p.y, p.x);
+	return float4((angle * 0.15915494309 + 0.5), 0, 0, 0);
+}

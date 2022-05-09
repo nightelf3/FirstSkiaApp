@@ -18,7 +18,6 @@ public:
 	void OnResize(int w, int h) override;
 	bool OnKey(Key key, InputState state, ModifierKey modifiers) override;
 	bool OnMouse(int x, int y, InputState state, ModifierKey modifiers) override;
-	bool OnMouseWheel(InputState state, ModifierKey modifiers) override;
 
 	void Invalidate() override;
 	void SwapBuffers() override;

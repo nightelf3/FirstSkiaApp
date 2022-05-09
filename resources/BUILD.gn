@@ -2,11 +2,11 @@ import("//build/utils/configuration.gni")
 
 copy("resources") {
   sources = [
-    "4k.jpg",
-    "8k.jpg",
-    "doge.png",
-    "shaders/BlackAndWhite.sksl",
-    "shaders/Swirl.sksl",
+    "shaders/Circular.sksl",
+    "shaders/Conical.sksl",
+    "shaders/Fill.sksl",
+    "shaders/Linear.sksl",
+    "shaders/Rectangular.sksl",
   ]
   outputs = [ "$root_out_dir/resources/{{source_file_part}}" ]
 }

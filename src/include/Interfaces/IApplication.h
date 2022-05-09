@@ -12,7 +12,6 @@ struct IApplication
 	virtual void OnResize(int w, int h) = 0;
 	virtual bool OnKey(Key key, InputState state, ModifierKey modifiers) = 0;
 	virtual bool OnMouse(int x, int y, InputState state, ModifierKey modifiers) = 0;
-	virtual bool OnMouseWheel(InputState state, ModifierKey modifiers) = 0;
 
 	virtual void Invalidate() = 0;
 	virtual void SwapBuffers() = 0;

@@ -96,13 +96,6 @@ bool Application::OnMouse(int x, int y, InputState state, ModifierKey modifiers)
 	return false;
 }
 
-bool Application::OnMouseWheel(InputState state, ModifierKey modifiers)
-{
-	if (auto layer = m_Layers.Active())
-		return layer->ProcessMouseWheel(state, modifiers);
-	return false;
-}
-
 void Application::Invalidate()
 {
 	m_Window->Invalidate();

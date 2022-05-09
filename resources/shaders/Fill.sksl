@@ -1,0 +1,38 @@
+uniform shader colorShader;
+uniform shader valueShader;
+
+uniform float steps;
+uniform float scale;
+uniform float conical;
+
+float getClamped(float v) {
+	return fract(v);
+}
+
+float4 main(float2 p) {
+	float value = getClamped(valueShader.eval(p).x);
+
+	// get the color index
+	float t = floor(value * steps) / steps;
+
+	// calculate the delta
+	float scaleLocal = max(1.0, abs(scale));
+	float delta = (steps * 0.005) / scaleLocal;
+	if (conical > 0.0)
+		delta = delta * 0.2 / (length(p) + 0.01 / scaleLocal);
+
+	// get the main color
+	float4 mainColor = colorShader.eval(float2(t * steps + 0.5, 0.5));
+	float dist = (value - t) * steps - 0.5;
+	
+	// debug
+	//if (dist > 0.5 - delta) return float4(1, 0, 0, 1);
+
+	float tNext = dist > 0 ? t + 1.0 / steps : t - 1.0 / steps;
+	tNext = getClamped(tNext);
+
+	// mix the main color with the next to provide some AA
+	float4 nextColor = colorShader.eval(float2(tNext * steps + 0.5, 0.5));
+	float alpha = smoothstep(0.5 - delta, 0.5, dist);
+	return mix(mainColor, nextColor, alpha);
+}
