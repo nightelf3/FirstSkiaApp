@@ -1,0 +1,3 @@
+float4 main(float2 p) {
+	return float4(fract(p.x), 0, 0, 0);
+}

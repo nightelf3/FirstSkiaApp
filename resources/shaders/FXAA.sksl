@@ -1,0 +1,42 @@
+uniform shader colorizer;
+uniform float2 inverseSize;
+
+const half FXAA_SPAN_MAX = 8.0;
+const half FXAA_REDUCE_MUL = 1.0 / 8.0;
+const half FXAA_REDUCE_MIN = 1.0 / 128.0;
+
+half4 main(float2 fragCoord) {
+	half3 luma = vec3(0.299, 0.587, 0.114);
+	half lumaNW = dot(colorizer.eval(fragCoord + vec2(-1.0, -1.0) * inverseSize).rgb, luma);
+	half lumaNE = dot(colorizer.eval(fragCoord + vec2(1.0, -1.0) * inverseSize).rgb, luma);
+	half lumaSW = dot(colorizer.eval(fragCoord + vec2(-1.0, 1.0) * inverseSize).rgb, luma);
+	half lumaSE = dot(colorizer.eval(fragCoord + vec2(1.0, 1.0) * inverseSize).rgb, luma);
+	half lumaM = dot(colorizer.eval(fragCoord).rgb, luma);
+
+	half lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+	half lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+
+	half2 dir = vec2(
+		-((lumaNW + lumaNE) - (lumaSW + lumaSE)),
+			((lumaNW + lumaSW) - (lumaNE + lumaSE)));
+
+	half dirReduce = max(
+		(lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL),
+		FXAA_REDUCE_MIN);
+
+	half rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+	dir = min(
+		vec2(FXAA_SPAN_MAX,  FXAA_SPAN_MAX),
+		max(
+			vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+			dir * rcpDirMin
+		)) * inverseSize;
+	half4 rgbA = 0.5 * (
+		colorizer.eval(fragCoord + dir * (1.0 / 3.0 - 0.5)) +
+		colorizer.eval(fragCoord + dir * (2.0 / 3.0 - 0.5)));
+	half4 rgbB = rgbA * 0.5 + 0.25 * (
+		colorizer.eval(fragCoord - 0.5 * dir) +
+		colorizer.eval(fragCoord + 0.5 * dir));
+	half lumaB = dot(rgbB.rgb, luma);
+	return (lumaB < lumaMin) || (lumaB > lumaMax) ? rgbA : rgbB;
+}

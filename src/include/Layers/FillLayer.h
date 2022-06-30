@@ -13,6 +13,20 @@ enum class FillType
 	Rectangular
 };
 
+enum class FillMode
+{
+	Clamp,
+	Repeat,
+	Mirror
+};
+
+enum class FillAA
+{
+	None,
+	Linear,
+	FXAA
+};
+
 class FillLayer final : public BaseLayer
 {
 public:
@@ -28,6 +42,8 @@ private:
 	SkScalar m_Zoom = 1.0f;
 	SkPoint m_Pan = SkPoint::Make(0.0f, 0.0f);
 	FillType m_FillType = FillType::Linear;
+	FillMode m_FillMode = FillMode::Repeat;
+	FillAA m_FillAA = FillAA::Linear;
 
 	bool m_MouseDown = false;
 	SkPoint m_ptMouse;
@@ -37,4 +53,6 @@ private:
 	std::weak_ptr<IControlValue> m_ScaleSlider;
 	std::weak_ptr<IControlValue> m_RotateSlider;
 	std::weak_ptr<IControlValue> m_SkewSlider;
+
+	std::weak_ptr<IControlValue> m_CycleSlider;
 };

@@ -1,0 +1,7 @@
+uniform float colorCount;
+
+float4 main(float2 p) {
+	p.x = mod(p.x, 2.0 - 2.0 / colorCount);
+	p.x += step(1.0, p.x) * ((2.0 - 1.0 / colorCount) - 2.0 * p.x);
+	return float4(p.x, 0, 0, 0);
+}

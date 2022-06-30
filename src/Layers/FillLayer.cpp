@@ -14,12 +14,17 @@ namespace
 		SkScalar conical = 0.0f;
 	};
 
+	struct FXAAInput
+	{
+		SkVector scale;
+	};
+
 	sk_sp<SkShader> GetColorizer(SkScalar colors)
 	{
 		const int nColors = static_cast<int>(colors + 0.5f);
 		SkBitmap bmp;
 		bmp.allocN32Pixels(nColors, 1);
-		
+
 		SkColor* pixels = static_cast<SkColor*>(bmp.getPixels());
 		for (int i = 0; i < nColors; i++)
 		{
@@ -55,6 +60,31 @@ namespace
 
 		auto [effect, error] = Shaders::LoadFromFile(path);
 		return effect ? effect->makeShader(nullptr, nullptr, 0, nullptr, false) : nullptr;
+	}
+
+	sk_sp<SkShader> GetModeShader(FillMode type, SkScalar numSteps)
+	{
+		SkString path;
+		sk_sp<SkData> dataInput;
+		switch (type)
+		{
+		case FillMode::Mirror:
+			dataInput = SkData::MakeWithCopy(&numSteps, sizeof(SkScalar));
+			path = "resources/shaders/Mirror.sksl";
+			break;
+
+		case FillMode::Repeat:
+			path = "resources/shaders/Repeat.sksl";
+			break;
+
+		default:
+		case FillMode::Clamp:
+			path = "resources/shaders/Clamp.sksl";
+			break;
+		}
+
+		auto [effect, error] = Shaders::LoadFromFile(path);
+		return effect ? effect->makeShader(dataInput, nullptr, 0, nullptr, false) : nullptr;
 	}
 }
 
@@ -98,11 +128,33 @@ FillLayer::FillLayer() : m_Container(ThemeUtils::GetRightContainerParams())
 
 	{
 		auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
-
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillType = FillType::Linear; }, SkString{ "Linear" });
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillType = FillType::Circular; }, SkString{ "Circular" });
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillType = FillType::Conical; }, SkString{ "Conical" });
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillType = FillType::Rectangular; }, SkString{ "Rectangular" });
+	}
+
+	{
+		auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillMode = FillMode::Clamp; }, SkString{ "Clamp" });
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillMode = FillMode::Repeat; }, SkString{ "Repeat" });
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillMode = FillMode::Mirror; }, SkString{ "Mirror" });
+	}
+
+	{
+		auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::None; }, SkString{ "None" });
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::Linear; }, SkString{ "Linear" });
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::FXAA; }, SkString{ "FXAA" });
+	}
+
+	{
+		auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
+		params.m_Increment = 1.0f;
+		params.m_Min = 1.0f;
+		params.m_Max = 5000.0f;
+		params.m_Value = 1.0f;
+		m_CycleSlider = effectContainer.lock()->AddControl<Slider>(params, SkString{ "Draw cycles:" });
 	}
 }
 
@@ -117,7 +169,7 @@ void FillLayer::Draw(SkCanvas* canvas)
 	canvas->clear(SkColors::kBlack);
 	const SkRect bounds = Utils::GetBounds(canvas);
 
-	auto [effect, error] = Shaders::LoadFromFile(SkString{ "resources/shaders/Fill.sksl" });
+	auto [effect, error] = Shaders::LoadFromFile(SkString{ m_FillAA == FillAA::Linear ? "resources/shaders/Fill_AA.sksl" : "resources/shaders/Fill.sksl" });
 	if (effect)
 	{
 		SkAutoCanvasRestore guard(canvas, true);
@@ -142,10 +194,23 @@ void FillLayer::Draw(SkCanvas* canvas)
 		localTrans.postRotate(m_RotateSlider.lock()->GetValue(), 0.5f, 0.5f);
 
 		sk_sp<SkData> dataInput = SkData::MakeWithCopy(&input, sizeof(FillInput));
-		sk_sp<SkShader> children[] = { GetColorizer(input.steps), GetValueShader(m_FillType) };
-		paint.setShader(effect->makeShader(dataInput, children, 2, &localTrans, false));
+		sk_sp<SkShader> children[] = { GetColorizer(input.steps), GetValueShader(m_FillType), GetModeShader(m_FillMode, input.steps) };
+		sk_sp<SkShader> colorizer = effect->makeShader(dataInput, children, 3, &localTrans, false);
+		if (m_FillAA == FillAA::FXAA)
+		{
+			auto [effect, error] = Shaders::LoadFromFile(SkString{ "resources/shaders/FXAA.sksl" });
 
-		canvas->drawRect(rect, paint);
+			FXAAInput input;
+			input.scale = SkVector::Make(1.0f / m_Zoom, 1.0f / m_Zoom);
+			sk_sp<SkData> dataInput = SkData::MakeWithCopy(&input, sizeof(FXAAInput));
+
+			sk_sp<SkShader> children[] = { colorizer };
+			colorizer = effect->makeShader(dataInput, children, 1, nullptr, false);
+		}
+		paint.setShader(colorizer);
+
+		for (SkScalar i = 0; i < m_CycleSlider.lock()->GetValue(); i++)
+			canvas->drawRect(rect, paint);
 	}
 
 	// draw controls
@@ -169,11 +234,11 @@ bool FillLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifie
 		m_MouseDown = true;
 		m_ptMouse = SkPoint::Make(x, y);
 		break;
-	
+
 	case InputState::kUp:
 		m_MouseDown = false;
 		break;
-	
+
 	case InputState::kMove:
 		if (m_MouseDown)
 		{
@@ -181,17 +246,17 @@ bool FillLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifie
 			m_ptMouse = SkPoint::Make(x, y);
 		}
 		break;
-	
+
 	case InputState::kZoomIn:
 		if (m_Zoom < 10'000.0)
 			m_Zoom /= kZoomValue;
 		break;
-	
+
 	case InputState::kZoomOut:
 		if (m_Zoom > 0.02)
 			m_Zoom *= kZoomValue;
 		break;
-	
+
 	default:
 		return false;
 	}
