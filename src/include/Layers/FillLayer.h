@@ -24,6 +24,7 @@ enum class FillAA
 {
 	None,
 	Linear,
+	MSAA,
 	FXAA
 };
 

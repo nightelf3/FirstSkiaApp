@@ -86,6 +86,30 @@ namespace
 		auto [effect, error] = Shaders::LoadFromFile(path);
 		return effect ? effect->makeShader(dataInput, nullptr, 0, nullptr, false) : nullptr;
 	}
+
+	sk_sp<SkRuntimeEffect> GetFillEffect(FillAA type)
+	{
+		SkString path;
+		switch (type)
+		{
+		default:
+		case FillAA::FXAA:
+		case FillAA::None:
+			path = "resources/shaders/Fill.sksl";
+			break;
+
+		case FillAA::Linear:
+			path = "resources/shaders/Fill_AA.sksl";
+			break;
+
+		case FillAA::MSAA:
+			path = "resources/shaders/Fill_MSAA.sksl";
+			break;
+		}
+
+		auto [effect, error] = Shaders::LoadFromFile(path);
+		return effect;
+	}
 }
 
 FillLayer::FillLayer() : m_Container(ThemeUtils::GetRightContainerParams())
@@ -145,6 +169,7 @@ FillLayer::FillLayer() : m_Container(ThemeUtils::GetRightContainerParams())
 		auto&& effectContainer = m_Container.AddControl<ControlsContainer>(ThemeUtils::GetControlsContainerParams());
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::None; }, SkString{ "None" });
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::Linear; }, SkString{ "Linear" });
+		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::MSAA; }, SkString{ "MSAA" });
 		effectContainer.lock()->AddControl<Button>([this]() { m_FillAA = FillAA::FXAA; }, SkString{ "FXAA" });
 	}
 
@@ -169,7 +194,7 @@ void FillLayer::Draw(SkCanvas* canvas)
 	canvas->clear(SkColors::kBlack);
 	const SkRect bounds = Utils::GetBounds(canvas);
 
-	auto [effect, error] = Shaders::LoadFromFile(SkString{ m_FillAA == FillAA::Linear ? "resources/shaders/Fill_AA.sksl" : "resources/shaders/Fill.sksl" });
+	sk_sp<SkRuntimeEffect> effect = GetFillEffect(m_FillAA);
 	if (effect)
 	{
 		SkAutoCanvasRestore guard(canvas, true);

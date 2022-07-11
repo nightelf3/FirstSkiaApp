@@ -1,0 +1,41 @@
+uniform shader colorShader;
+uniform shader valueShader;
+uniform shader modeShader;
+
+uniform float steps;
+uniform float scale;
+uniform float conical;
+
+const float SAMPLES = 4;
+const float SAMPLES_INV = 1.0 / SAMPLES;
+const float S_SAMPLES = SAMPLES * SAMPLES;
+const float S_SAMPLES_INV = 1.0 / S_SAMPLES;
+
+float GetClampedValue(float v)
+{
+	return modeShader.eval(float2(v, 0.0)).x;
+}
+
+float GetValue(vec2 p)
+{
+	return floor(valueShader.eval(p).x * steps);
+}
+
+vec4 GetColor(float t, float d)
+{
+	t = GetClampedValue(t / steps) * steps;
+	return colorShader.eval(float2(t + d, 0.5));
+}
+
+half4 main(vec2 p)
+{
+	float t = 0.0;
+	for (float i = 0; i < SAMPLES; i++) {
+		for (float j = 0; j < SAMPLES; j++) {
+			t += GetValue(p + vec2(j * SAMPLES_INV / 600, i * SAMPLES_INV / 600));
+		}
+	}
+
+	t = t * S_SAMPLES_INV;
+	return mix(GetColor(t, 0.5), GetColor(t + 1.0, 0.0), t - floor(t));
+}
