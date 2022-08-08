@@ -11,8 +11,8 @@ Windows only project (at least, for now) to play with Skia.
 
 ### Useful commands
 - Build:
-    - Debug: ```build\bin\gn gen out/Debug && ninja -C out/Debug```
-    - Release: ```build\bin\gn gen out/Release --args="is_debug=false" && ninja -C out/Release```
+    - Debug: ```build\bin\gn gen out/Debug && build\bin\ninja -C out/Debug```
+    - Release: ```build\bin\gn gen out/Release --args="is_debug=false" && build\bin\ninja -C out/Release```
 - Build VSProject:
     - [1] Generate JSON: ```build\bin\gn gen out/Debug --ide=json```
     - [2] Build solution: ```python build/bin/genvcproj.py out/Debug/project.json```
