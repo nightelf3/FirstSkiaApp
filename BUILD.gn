@@ -24,6 +24,7 @@ executable("FirstSkiaApp") {
     "src/include/Interfaces/IApplication.h",
     "src/include/Interfaces/IBackground.h",
     "src/include/Interfaces/IControl.h",
+    "src/include/Interfaces/IControlCaption.h",
     "src/include/Interfaces/IControlValue.h",
     "src/include/Interfaces/ILayer.h",
     "src/include/Interfaces/IPlatformWindow.h",

@@ -19,16 +19,15 @@ struct LabelParams
 class Label : public BaseControl
 {
 public:
-	Label(SkString caption);
+	Label(SkString caption = {});
 	Label(const LabelParams& params, SkString caption);
 	~Label() override = default;
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override;
 	SkScalar GetHeight() const override;
 
-	bool IsSupportInputState(InputState state) const override { return false; }
-
 private:
+	bool IsSupportInputState(InputState state) const override { return false; }
 	SkPoint GetTextPoint(const SkRect& bounds, const SkPaint& paint) const;
 
 	LabelParams m_Params;
