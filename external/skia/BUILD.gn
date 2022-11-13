@@ -2,14 +2,105 @@
 import("//build/utils/configuration.gni")
 import("//external/imported_library.gni")
 
+group("skia") {
+  deps = [
+    ":sk_libs",
+    ":sk_app",
+  ]
+}
+
 config("opengl") {
   libs = [ "opengl32.lib" ]
   defines = [ "SK_GL" ]
 }
 
-imported_library("skia") {
+imported_library("sk_libs") {
   include_dirs = [ "//external/skia/skia" ]
   lib_dirs = [ "//external/skia/bin/$configuration" ]
   libs = [ "skia.dll.lib" ]
   runtimes = [ "//external/skia/bin/$configuration/skia.dll" ]
+}
+
+executable("sk_app") {
+  sources = [
+    "skia/tools/sk_app/Application.h",
+    "skia/tools/sk_app/CommandSet.cpp",
+    "skia/tools/sk_app/CommandSet.h",
+    "skia/tools/sk_app/DisplayParams.h",
+    "skia/tools/sk_app/RasterWindowContext.h",
+    "skia/tools/sk_app/Window.cpp",
+    "skia/tools/sk_app/Window.h",
+    "skia/tools/sk_app/WindowContext.cpp",
+    "skia/tools/sk_app/WindowContext.h",
+  ]
+  libs = []
+  frameworks = []
+  include_dirs = [ "//external/skia/skia" ]
+
+  if (is_win) {
+    sources += [
+      "skia/tools/sk_app/win/RasterWindowContext_win.cpp",
+      "skia/tools/sk_app/win/WindowContextFactory_win.h",
+      "skia/tools/sk_app/win/Window_win.cpp",
+      "skia/tools/sk_app/win/Window_win.h",
+      "skia/tools/sk_app/win/main_win.cpp",
+    ]
+  } else if (is_mac) {
+    sources += [
+      "skia/tools/sk_app/mac/WindowContextFactory_mac.h",
+      "skia/tools/sk_app/mac/Window_mac.h",
+      "skia/tools/sk_app/mac/Window_mac.mm",
+      "skia/tools/sk_app/mac/main_mac.mm",
+    ]
+    frameworks += [
+      "QuartzCore.framework",
+      "Cocoa.framework",
+      "Foundation.framework",
+    ]
+  }
+
+ #run
+  deps = [
+    ":sk_libs"
+  ]
+
+  public_configs = [
+    "//build/config/win:unicode",
+    "//build/config/win:nominmax",
+    "//build/config/win:windowed",
+  ]
+
+  libs += [
+    "user32.lib",
+    "gdi32.lib"
+  ]
+
+  sources += [
+    "skia/example/HelloWorld.cpp",
+    "skia/example/HelloWorld.h",
+  ]
+
+  defines = [
+    "SK_GL"
+  ]
+
+  #GL
+  sources += [ "skia/tools/sk_app/GLWindowContext.cpp" ]
+  sources += [ "skia/tools/sk_app/GLWindowContext.h" ]
+  sources += [
+    "skia/src/gpu/gl/GrGLUtil.cpp",
+    "skia/src/utils/win/SkWGL.h",
+    "skia/src/utils/win/SkWGL_win.cpp",
+    "skia/src/core/SkString.cpp",
+    "skia/src/core/SkUtils.cpp",
+  ]
+  if (is_win) {
+    sources += [ "skia/tools/sk_app/win/GLWindowContext_win.cpp" ]
+  } else if (is_mac) {
+    sources += [
+      "skia/tools/sk_app/mac/GLWindowContext_mac.mm",
+      "skia/tools/sk_app/mac/RasterWindowContext_mac.mm",
+    ]
+  }
+  public_configs += [ ":opengl" ]
 }
