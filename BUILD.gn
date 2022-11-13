@@ -1,5 +1,5 @@
 executable("FirstSkiaApp") {
-  include_dirs = [ "src" ]
+  include_dirs = [ "src", "//external/skia/skia" ]
 
   sources = [
     "src/Backgounds/BaseBackgound.cpp",
