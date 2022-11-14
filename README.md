@@ -8,18 +8,12 @@ Windows only project (at least, for now) to play with Skia.
 - Create a new class that implements [ILayer interface][ILayer]
 - Add it to the [Application][Application]
 
-
 ### Useful commands
-- Build:
-    - Debug: ```build\bin\gn gen out/Debug && build\bin\ninja -C out/Debug```
-    - Release: ```build\bin\gn gen out/Release --args="is_debug=false" && build\bin\ninja -C out/Release```
-- Build VSProject:
-    - [1] Generate JSON: ```build\bin\gn gen out/Debug --ide=json```
-    - [2] Build solution: ```python build/bin/genvcproj.py out/Debug/project.json```
-    - P.S. use ```Build > Rebuild Solution``` to generate GN
+- Build: ```run build [debug|release]```
+- Build VSProject: ```run genproj```
 - Update Skia:
-    - [1] Update submosule: ```git submodule update --remote external/skia/skia```
-    - [2] Rebuild DLLs: ```python external/skia/bin/rebuild.py```
+    - [1] Update submosule: ```run skia update```
+    - [2] Update DLLs: ```run skia build```
 
 ### Examples
 Check the folowing branch for examples: [example branch][Examples]
