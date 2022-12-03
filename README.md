@@ -1,7 +1,7 @@
 Windows only project (at least, for now) to play with Skia.
 
 ### Hotkeys
-- Z, X - change the background (Raster/OpenGL)
+- Space - change the background (Raster/OpenGL)
 - Tab - change the current layer
 
 ### Add a layer
