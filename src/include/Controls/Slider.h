@@ -22,10 +22,10 @@ public:
 	SkScalar GetHeight() const override;
 
 private:
-	bool OnKey(Key key, InputState state, ModifierKey modifiers) override;
-	bool OnMouseDown(int x, int y, ModifierKey modifiers) override;
-	void OnMouseMove(int x, int y, ModifierKey modifiers, bool active) override;
-	void OnMouseUp(int x, int y, ModifierKey modifiers) override;
+	bool OnKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers) override;
+	bool OnMouseDown(int x, int y, skui::ModifierKey modifiers) override;
+	void OnMouseMove(int x, int y, skui::ModifierKey modifiers, bool active) override;
+	void OnMouseUp(int x, int y, skui::ModifierKey modifiers) override;
 
 	SkRect m_Track;
 };

@@ -27,7 +27,7 @@ public:
 	SkScalar GetHeight() const override;
 
 private:
-	bool IsSupportInputState(InputState state) const override { return false; }
+	bool IsSupportInputState(skui::InputState state) const override { return false; }
 	SkPoint GetTextPoint(const SkRect& bounds, const SkPaint& paint) const;
 
 	LabelParams m_Params;

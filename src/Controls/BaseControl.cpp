@@ -8,12 +8,17 @@ BaseControl::BaseControl(SkString caption) :
 {
 }
 
-bool BaseControl::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+bool BaseControl::ProcessChar(SkUnichar c, skui::ModifierKey modifiers)
+{
+	return OnChar(c, modifiers);
+}
+
+bool BaseControl::ProcessKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers)
 {
 	return OnKey(key, state, modifiers);
 }
 
-bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+bool BaseControl::ProcessMouse(int x, int y, skui::InputState state, skui::ModifierKey modifiers)
 {
 	const bool isProcessEvent = m_MouseDown || IsSupportInputState(state) && Utils::IsPointInRect(x, y, m_Bounds);
 	m_Active = isProcessEvent || Focus::IsInFocus(this);
@@ -22,16 +27,16 @@ bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modif
 
 	switch (state)
 	{
-	case InputState::kDown:
+	case skui::InputState::kDown:
 		m_MouseDown = OnMouseDown(x, y, modifiers);
 		Focus::SetFocus(this);
 		break;
 
-	case InputState::kMove:
+	case skui::InputState::kMove:
 		OnMouseMove(x, y, modifiers, m_MouseDown);
 		break;
 
-	case InputState::kUp:
+	case skui::InputState::kUp:
 		if (m_MouseDown)
 			OnMouseUp(x, y, modifiers);
 		m_MouseDown = false;
@@ -41,13 +46,13 @@ bool BaseControl::ProcessMouse(int x, int y, InputState state, ModifierKey modif
 	return true;
 }
 
-bool BaseControl::IsSupportInputState(InputState state) const
+bool BaseControl::IsSupportInputState(skui::InputState state) const
 {
 	switch (state)
 	{
-	case InputState::kDown:
-	case InputState::kUp:
-	case InputState::kMove:
+	case skui::InputState::kDown:
+	case skui::InputState::kUp:
+	case skui::InputState::kMove:
 		return true;
 	}
 	return false;

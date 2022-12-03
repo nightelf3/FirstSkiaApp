@@ -14,19 +14,22 @@ public:
 	void SetCaption(SkString caption) override { m_Caption = std::move(caption); }
 
 	void Draw(SkCanvas* canvas, const SkRect& bounds) override { m_Bounds = bounds; }
-	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override final;
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override final;
+
+	virtual bool ProcessChar(SkUnichar c, skui::ModifierKey modifiers) override final;
+	virtual bool ProcessKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers) override final;
+	virtual bool ProcessMouse(int x, int y, skui::InputState state, skui::ModifierKey modifiers) override final;
 
 protected:
 	bool IsActive() const { return m_Active; }
 	SkRect GetBounds() const { return m_Bounds; }
 
-	virtual bool OnKey(Key key, InputState state, ModifierKey modifiers) { return false; }
+	virtual bool OnChar(SkUnichar c, skui::ModifierKey modifiers) { return false; }
+	virtual bool OnKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers) { return false; }
 
-	virtual bool IsSupportInputState(InputState state) const;
-	virtual bool OnMouseDown(int x, int y, ModifierKey modifiers) { return false; }
-	virtual void OnMouseMove(int x, int y, ModifierKey modifiers, bool active) {}
-	virtual void OnMouseUp(int x, int y, ModifierKey modifiers) {}
+	virtual bool IsSupportInputState(skui::InputState state) const;
+	virtual bool OnMouseDown(int x, int y, skui::ModifierKey modifiers) { return false; }
+	virtual void OnMouseMove(int x, int y, skui::ModifierKey modifiers, bool active) {}
+	virtual void OnMouseUp(int x, int y, skui::ModifierKey modifiers) {}
 
 private:
 	SkString m_Caption;

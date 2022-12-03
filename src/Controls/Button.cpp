@@ -37,13 +37,13 @@ SkScalar Button::GetHeight() const
 	return kHeight;
 }
 
-bool Button::OnMouseDown(int x, int y, ModifierKey modifiers)
+bool Button::OnMouseDown(int x, int y, skui::ModifierKey modifiers)
 {
 	m_Pressed = true;
 	return true;
 }
 
-void Button::OnMouseUp(int x, int y, ModifierKey modifiers)
+void Button::OnMouseUp(int x, int y, skui::ModifierKey modifiers)
 {
 	m_Pressed = false;
 	if (m_Action)
