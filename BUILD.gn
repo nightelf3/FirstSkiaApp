@@ -1,19 +1,20 @@
 executable("FirstSkiaApp") {
-  include_dirs = [ "src", "//external/skia/skia" ]
-
   sources = [
-    "src/Backgounds/BaseBackgound.cpp",
-    "src/Backgounds/OpenGLBackgound.cpp",
-    "src/Backgounds/RasterBackgound.cpp",
+    # TODO: move sk_app into a static lib
+    "//external/skia/skia/tools/sk_app/Application.h",
+    "//external/skia/skia/tools/sk_app/DisplayParams.h",
+    "//external/skia/skia/tools/sk_app/RasterWindowContext.h",
+    "//external/skia/skia/tools/sk_app/Window.cpp",
+    "//external/skia/skia/tools/sk_app/Window.h",
+    "//external/skia/skia/tools/sk_app/WindowContext.cpp",
+    "//external/skia/skia/tools/sk_app/WindowContext.h",
+    
     "src/Controls/BaseControl.cpp",
     "src/Controls/Button.cpp",
     "src/Controls/ControlsContainer.cpp",
     "src/Controls/Focus.cpp",
     "src/Controls/Label.cpp",
     "src/Controls/Slider.cpp",
-    "src/include/Backgounds/BaseBackgound.h",
-    "src/include/Backgounds/OpenGLBackgound.h",
-    "src/include/Backgounds/RasterBackgound.h",
     "src/include/Controls/BaseControl.h",
     "src/include/Controls/BaseValueControl.h",
     "src/include/Controls/Button.h",
@@ -50,14 +51,26 @@ executable("FirstSkiaApp") {
     "src/LayerCollection.cpp"
   ]
 
-  public_configs = [
-    "//external/skia:opengl"
+  libs = []
+  public_configs = [ "//external/skia:opengl" ]
+  include_dirs = [ "src", "//external/skia/skia" ]
+  deps = [
+    "//external/skia",
+    "//resources",
   ]
 
   if (is_win) {
     sources += [
-      "src/PlatformApplication_win.cpp",
-      "src/PlatformWindow_win.cpp",
+      "//external/skia/skia/tools/sk_app/win/RasterWindowContext_win.cpp",
+      "//external/skia/skia/tools/sk_app/win/WindowContextFactory_win.h",
+      "//external/skia/skia/tools/sk_app/win/Window_win.cpp",
+      "//external/skia/skia/tools/sk_app/win/Window_win.h",
+      "//external/skia/skia/tools/sk_app/win/main_win.cpp",
+    ]
+
+    libs += [
+      "user32.lib",
+      "gdi32.lib"
     ]
 
     public_configs += [
@@ -65,15 +78,33 @@ executable("FirstSkiaApp") {
       "//build/config/win:nominmax",
       "//build/config/win:windowed",
     ]
-
-    libs = [
-      "user32.lib",
-      "gdi32.lib"
+  } else if (is_mac) {
+    sources += [
+      "//external/skia/skia/tools/sk_app/mac/WindowContextFactory_mac.h",
+      "//external/skia/skia/tools/sk_app/mac/Window_mac.h",
+      "//external/skia/skia/tools/sk_app/mac/Window_mac.mm",
+      "//external/skia/skia/tools/sk_app/mac/main_mac.mm",
+    ]
+    deps += [
+      "QuartzCore.framework",
+      "Cocoa.framework",
+      "Foundation.framework",
     ]
   }
 
-  deps = [
-    "//external/skia",
-    "//resources"
+  #GL
+  sources += [
+    "//external/skia/skia/tools/sk_app/GLWindowContext.cpp",
+    "//external/skia/skia/tools/sk_app/GLWindowContext.h",
+    "//external/skia/skia/src/utils/win/SkWGL.h",
+    "//external/skia/skia/src/utils/win/SkWGL_win.cpp",
   ]
+  if (is_win) {
+    sources += [ "//external/skia/skia/tools/sk_app/win/GLWindowContext_win.cpp" ]
+  } else if (is_mac) {
+    sources += [
+      "//external/skia/skia/tools/sk_app/mac/GLWindowContext_mac.mm",
+      "//external/skia/skia/tools/sk_app/mac/RasterWindowContext_mac.mm",
+    ]
+  }
 }

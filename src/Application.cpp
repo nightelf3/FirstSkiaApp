@@ -1,141 +1,121 @@
-#include "include/core/SkTypes.h"
-#include "include/Application.h"
-
-#include "include/Backgounds/RasterBackgound.h"
-#include "include/Backgounds/OpenGLBackgound.h"
+#include "tools/sk_app/Application.h"
+#include "tools/sk_app/Window.h"
 
 #include "include/core/SkGraphics.h"
 
-Application::Application()
-{
-	m_Window = CreatePlatformWindow(this);
-	m_Window->SetBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
+#include "include/LayerCollection.h"
+#include "include/Utils/FPS.h"
+#include "include/Layers/SwirlLayer.h"
+#include "include/Layers/BlackAndWhiteLayer.h"
 
+using namespace sk_app;
+
+bool gCheckErrorGL = false;
+bool gLogCallsGL = false;
+
+class FirstSkiaApp : public sk_app::Application, sk_app::Window::Layer
+{
+public:
+	FirstSkiaApp(int argc, char** argv, void* platformData);
+	~FirstSkiaApp() override;
+	void onIdle() override;
+
+	void onBackendCreated() override;
+	bool onChar(SkUnichar c, skui::ModifierKey modifiers) override;
+	void onPaint(SkSurface* surface) override;
+
+private:
+	void updateTitle();
+
+	std::unique_ptr<sk_app::Window> fWindow;
+	sk_app::Window::BackendType fBackendType;
+
+	LayerCollection m_Layers;
+	FPS m_FPS;
+};
+
+FirstSkiaApp::FirstSkiaApp(int argc, char** argv, void* platformData) :
+	fBackendType(Window::kNativeGL_BackendType)
+{
 	SkGraphics::Init();
 	SkGraphics::AllowJIT();
+
+	fWindow.reset(Window::CreateNativeWindow(platformData));
+	fWindow->setRequestedDisplayParams(DisplayParams());
+
+	m_Layers.Add(std::make_shared<SwirlLayer>());
+	m_Layers.Add(std::make_shared<BlackAndWhiteLayer>());
+
+	// register callbacks
+	fWindow->pushLayer(this);
+	fWindow->attach(fBackendType);
 }
 
-void Application::Show()
+FirstSkiaApp::~FirstSkiaApp()
 {
-	UpdateTitle();
-	m_Window->Show();
+	fWindow->detach();
 }
 
-void Application::AddLayer(spLayer&& layer)
+void FirstSkiaApp::onBackendCreated()
 {
-	if (!layer)
-		return;
-	m_Layers.Add(std::move(layer));
+	updateTitle();
+	fWindow->show();
+	fWindow->inval();
 }
 
-void Application::OnPaint()
+void FirstSkiaApp::onIdle()
 {
-	if (!m_Surface)
-		return;
-
-	// draw into the canvas of this surface
-	if (auto layer = m_Layers.Active())
-		layer->Draw(m_Surface->getCanvas());
-
-	m_Surface->flushAndSubmit();
-	SwapBuffers();
+	// re-paint continously
+	fWindow->inval();
 
 	m_FPS.Calc();
-	UpdateTitle();
+	updateTitle();
 }
 
-void Application::OnIdle()
-{
-	Invalidate();
-}
-
-void Application::OnResize(int w, int h)
-{
-	m_Surface = m_Window->Resize(w, h);
-}
-
-bool Application::OnKey(Key key, InputState state, ModifierKey modifiers)
-{
-	switch (key)
-	{
-	case Key::kTab:
-		if (InputState::kDown != state)
-			break;
-
-		if (ModifierKey::kNone == modifiers)
-			m_Layers.Next();
-		else if (ModifierKey::kShift == modifiers)
-			m_Layers.Prev();
-		UpdateTitle();
-		return true;
-
-	case Key::kZ:
-		if (InputState::kDown != state)
-			break;
-		ChangeBackgound(std::make_unique<RasterBackgound>(m_Window->GetHandle()));
-		return true;
-
-	case Key::kX:
-		if (InputState::kDown != state)
-			break;
-		ChangeBackgound(std::make_unique<OpenGLBackgound>(m_Window->GetHandle()));
-		return true;
-
-	default:
-		if (auto layer = m_Layers.Active())
-			return layer->ProcessKey(key, state, modifiers);
-	}
-
-	return false;
-}
-
-bool Application::OnMouse(int x, int y, InputState state, ModifierKey modifiers)
+void FirstSkiaApp::onPaint(SkSurface* surface)
 {
 	if (auto layer = m_Layers.Active())
-		return layer->ProcessMouse(x, y, state, modifiers);
-	return false;
+		layer->onPaint(surface);
 }
 
-bool Application::OnMouseWheel(InputState state, ModifierKey modifiers)
+bool FirstSkiaApp::onChar(SkUnichar c, skui::ModifierKey modifiers)
 {
-	if (auto layer = m_Layers.Active())
-		return layer->ProcessMouseWheel(state, modifiers);
-	return false;
-}
-
-void Application::Invalidate()
-{
-	m_Window->Invalidate();
-}
-
-void Application::SwapBuffers()
-{
-	m_Window->Draw();
-}
-
-void Application::ChangeBackgound(std::unique_ptr<IBackground>&& backgound)
-{
-	m_Surface = m_Window->SetBackgound(std::move(backgound));
-	UpdateTitle();
-}
-
-void Application::UpdateTitle()
-{
-	std::wstring title;
-	if (auto background = m_Window->GetBackgound())
+	if (' ' == c)
 	{
-		title.append(m_Window->GetBackgound()->GetName());
-		title.append(L" - ");
+		fBackendType = Window::kRaster_BackendType == fBackendType ? Window::kNativeGL_BackendType : Window::kRaster_BackendType;
+		fWindow->detach();
+		fWindow->attach(fBackendType);
+		return true;
 	}
+
+	if (auto layer = m_Layers.Active())
+		return layer->onChar(c, modifiers);
+
+	return false;
+}
+
+void FirstSkiaApp::updateTitle()
+{
+	if (!fWindow)
+		return;
+
+	SkString title;
+	title.append(Window::kRaster_BackendType == fBackendType ? "Raster" : "OpenGL");
+	title.append(" - ");
 
 	if (auto layer = m_Layers.Active())
 	{
 		title.append(layer->GetTitle());
-		title.append(L" - ");
+		title.append(" - ");
 	}
 
-	const SkString fps = m_FPS.Get();
-	title.append(std::wstring(fps.c_str(), fps.c_str() + strlen(fps.c_str())));
+	title.append(m_FPS.Get());
 
-	m_Window->SetTitle(std::move(title));
+	fWindow->setTitle(title.c_str());
+}
+
+
+Application* sk_app::Application::Create(int argc, char** argv, void* platformData)
+{
+	return new FirstSkiaApp(argc, argv, platformData);
 }

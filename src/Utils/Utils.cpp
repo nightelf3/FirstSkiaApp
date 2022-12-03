@@ -1,5 +1,6 @@
 #include "include/Utils/Utils.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkData.h"
 
 SkRect Utils::GetBounds(SkCanvas* canvas)
 {

@@ -11,10 +11,10 @@ public:
 	BlackAndWhiteLayer();
 	~BlackAndWhiteLayer() override = default;
 
-	std::wstring GetTitle() const override { return L"Black & White"; };
-	void Draw(SkCanvas* canvas) override;
-	bool ProcessKey(Key key, InputState state, ModifierKey modifiers) override;
-	bool ProcessMouse(int x, int y, InputState state, ModifierKey modifiers) override;
+	SkString GetTitle() const override { return SkString{"Black & White"}; };
+	void onPaint(SkSurface* surface) override;
+	bool onKey(skui::Key key, skui::InputState state, skui::ModifierKey modifier) override;
+	bool onMouse(int x, int y, skui::InputState state, skui::ModifierKey modifier) override;
 
 private:
 	sk_sp<SkImage> m_Image;

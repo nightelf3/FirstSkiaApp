@@ -55,12 +55,14 @@ SwirlLayer::SwirlLayer() : m_Container(ThemeUtils::GetRightContainerParams())
 		m_TwistsSlider.lock()->SetValue(Shaders::kSwirlDefault.twist);
 	}, SkString{"Reset"});
 
-	auto [effect, error] = Shaders::LoadFromFile(SkString{"resources/shaders/Swirl.sksl"});
-	m_Effect = effect;
+	auto res = Shaders::LoadFromFile(SkString{"resources/shaders/Swirl.sksl"});
+	m_Effect = std::move(res.effect);
 }
 
-void SwirlLayer::Draw(SkCanvas* canvas)
+void SwirlLayer::onPaint(SkSurface* surface)
 {
+	SkCanvas* canvas = surface->getCanvas();
+
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
 	const SkRect bounds = Utils::GetBounds(canvas);
@@ -88,12 +90,14 @@ void SwirlLayer::Draw(SkCanvas* canvas)
 	m_Container.Draw(canvas, bounds);
 }
 
-bool SwirlLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+bool SwirlLayer::onKey(skui::Key key, skui::InputState state, skui::ModifierKey modifier)
 {
-	return m_Container.ProcessKey(key, state, modifiers);
+	//return m_Container.ProcessKey(key, state, modifiers);
+	return false;
 }
 
-bool SwirlLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+bool SwirlLayer::onMouse(int x, int y, skui::InputState state, skui::ModifierKey modifier)
 {
-	return m_Container.ProcessMouse(x, y, state, modifiers);
+	//return m_Container.ProcessMouse(x, y, state, modifiers);
+	return false;
 }

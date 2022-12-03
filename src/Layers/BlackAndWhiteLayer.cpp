@@ -76,8 +76,10 @@ BlackAndWhiteLayer::BlackAndWhiteLayer() :
 	m_Effect = effect;
 }
 
-void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
+void BlackAndWhiteLayer::onPaint(SkSurface* surface)
 {
+	SkCanvas* canvas = surface->getCanvas();
+
 	// clear canvas with black color
 	canvas->clear(SkColors::kBlack);
 	const SkRect bounds = Utils::GetBounds(canvas);
@@ -105,12 +107,13 @@ void BlackAndWhiteLayer::Draw(SkCanvas* canvas)
 	m_Container.Draw(canvas, bounds);
 }
 
-bool BlackAndWhiteLayer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+bool BlackAndWhiteLayer::onKey(skui::Key key, skui::InputState state, skui::ModifierKey modifier)
 {
-	return m_Container.ProcessKey(key, state, modifiers);
+	//return m_Container.ProcessKey(key, state, modifiers);
+	return false;
 }
-
-bool BlackAndWhiteLayer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+bool BlackAndWhiteLayer::onMouse(int x, int y, skui::InputState state, skui::ModifierKey modifier)
 {
-	return m_Container.ProcessMouse(x, y, state, modifiers);
+	//return m_Container.ProcessMouse(x, y, state, modifiers);
+	return false;
 }
