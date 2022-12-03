@@ -1,3 +1,4 @@
 /out/*
 /.vs/*
 /project.*
+external/skia/bin/Debug/skia.dll.pdb
