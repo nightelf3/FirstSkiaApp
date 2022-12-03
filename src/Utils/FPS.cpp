@@ -1,5 +1,6 @@
 #include "include/Utils/FPS.h"
 #include "include/core/SkFont.h"
+#include "include/core/SkCanvas.h"
 
 using namespace std::chrono;
 namespace

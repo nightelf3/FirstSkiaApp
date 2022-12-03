@@ -1,6 +1,6 @@
 #include "include/LayerCollection.h"
 
-void LayerCollection::Add(spLayer&& layer)
+void LayerCollection::Add(std::shared_ptr<BaseLayer>&& layer)
 {
 	m_Layers.push_back(std::move(layer));
 	if (m_Active == m_Layers.end())
@@ -27,9 +27,9 @@ void LayerCollection::Prev()
 		--m_Active;
 }
 
-spLayer LayerCollection::Active() const
+std::shared_ptr<BaseLayer> LayerCollection::Active() const
 {
 	if (m_Active == m_Layers.end())
-		return spLayer();
+		return {};
 	return *m_Active;
 }

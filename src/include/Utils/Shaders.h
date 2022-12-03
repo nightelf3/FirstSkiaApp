@@ -35,7 +35,7 @@ sk_sp<SkShader> CreateShader(sk_sp<SkImage> image, sk_sp<SkRuntimeEffect> effect
 	sk_sp<SkShader> pColorizerShader = image->makeShader(SkTileMode::kDecal, SkTileMode::kDecal, {}, SkMatrix::I());
 	sk_sp<SkData> dataInput = SkData::MakeWithCopy(&params, sizeof(BWParameters));
 	sk_sp<SkShader> children[] = { pColorizerShader };
-	return effect->makeShader(dataInput, children, 1, nullptr, false);
+	return effect->makeShader(dataInput, children, 1, nullptr);
 }
 
 SkRuntimeEffect::Result LoadFromFile(const SkString& filePath);
