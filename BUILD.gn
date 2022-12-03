@@ -38,8 +38,6 @@ executable("FirstSkiaApp") {
     "src/include/Utils/ThemeUtils.h",
     "src/include/Utils/Utils.h",
     "src/include/Application.h",
-    "src/include/LayerCollection.h",
-    "src/include/Types.h",
     "src/Layers/BlackAndWhiteLayer.cpp",
     "src/Layers/SwirlLayer.cpp",
     "src/Utils/DrawUtils.cpp",
@@ -48,7 +46,6 @@ executable("FirstSkiaApp") {
     "src/Utils/ThemeUtils.cpp",
     "src/Utils/Utils.cpp",
     "src/Application.cpp",
-    "src/LayerCollection.cpp"
   ]
 
   libs = []

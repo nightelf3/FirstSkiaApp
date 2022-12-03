@@ -109,11 +109,10 @@ void BlackAndWhiteLayer::onPaint(SkSurface* surface)
 
 bool BlackAndWhiteLayer::onKey(skui::Key key, skui::InputState state, skui::ModifierKey modifier)
 {
-	//return m_Container.ProcessKey(key, state, modifiers);
-	return false;
+	return m_Container.ProcessKey(key, state, modifier);
 }
+
 bool BlackAndWhiteLayer::onMouse(int x, int y, skui::InputState state, skui::ModifierKey modifier)
 {
-	//return m_Container.ProcessMouse(x, y, state, modifiers);
-	return false;
+	return m_Container.ProcessMouse(x, y, state, modifier);
 }

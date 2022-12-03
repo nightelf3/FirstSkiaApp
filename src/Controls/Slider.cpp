@@ -96,27 +96,27 @@ SkScalar Slider::GetHeight() const
 	return kThumbHeight;
 }
 
-bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
+bool Slider::OnKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers)
 {
-	if (InputState::kDown != state)
+	if (skui::InputState::kDown != state)
 		return false;
 
 	SkScalar increment = GetParams().m_Increment;
-	if (modifiers.Has(ModifierKey::kShift))
+	if ((modifiers & skui::ModifierKey::kShift) == skui::ModifierKey::kShift)
 		increment *= 10.0f;
-	else if (modifiers.Has(ModifierKey::kControl))
+	else if ((modifiers & skui::ModifierKey::kControl) == skui::ModifierKey::kControl)
 		increment *= 0.1f;
-	else if (modifiers.Has(ModifierKey::kAlt))
+	else if ((modifiers & skui::ModifierKey::kOption) == skui::ModifierKey::kOption)
 		increment *= 0.01f;
 
 	switch (key)
 	{
-	case Key::kRight:
-	case Key::kUp:
+	case skui::Key::kRight:
+	case skui::Key::kUp:
 		SetValue(GetValue() + increment);
 		break;
-	case Key::kLeft:
-	case Key::kDown:
+	case skui::Key::kLeft:
+	case skui::Key::kDown:
 		SetValue(GetValue() - increment);
 		break;
 	}
@@ -124,7 +124,7 @@ bool Slider::OnKey(Key key, InputState state, ModifierKey modifiers)
 	return true;
 }
 
-bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
+bool Slider::OnMouseDown(int x, int y, skui::ModifierKey modifiers)
 {
 	if (!Utils::IsXInRect(x, m_Track.makeOutset(kThumbWidth / 2.0f, 0.0f)))
 		return false;
@@ -132,13 +132,13 @@ bool Slider::OnMouseDown(int x, int y, ModifierKey modifiers)
 	return true;
 }
 
-void Slider::OnMouseMove(int x, int y, ModifierKey modifiers, bool active)
+void Slider::OnMouseMove(int x, int y, skui::ModifierKey modifiers, bool active)
 {
 	if (active)
 		SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 }
 
-void Slider::OnMouseUp(int x, int y, ModifierKey modifiers)
+void Slider::OnMouseUp(int x, int y, skui::ModifierKey modifiers)
 {
 	SetValue(GetValueFromPos(m_Track, x, GetMinValue(), GetMaxValue()));
 }

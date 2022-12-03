@@ -30,19 +30,26 @@ void ControlsContainer::Draw(SkCanvas* canvas, const SkRect& bounds)
 	}
 }
 
-bool ControlsContainer::ProcessKey(Key key, InputState state, ModifierKey modifiers)
+bool ControlsContainer::ProcessChar(SkUnichar c, skui::ModifierKey modifiers)
+{
+	if (auto control = Focus::GetFocus())
+		return control->ProcessChar(c, modifiers);
+	return false;
+}
+
+bool ControlsContainer::ProcessKey(skui::Key key, skui::InputState state, skui::ModifierKey modifiers)
 {
 	if (auto control = Focus::GetFocus())
 		return control->ProcessKey(key, state, modifiers);
 	return false;
 }
 
-bool ControlsContainer::ProcessMouse(int x, int y, InputState state, ModifierKey modifiers)
+bool ControlsContainer::ProcessMouse(int x, int y, skui::InputState state, skui::ModifierKey modifiers)
 {
 	bool processed = false;
 	for (auto& control : m_Controls)
 		processed |= control->ProcessMouse(x, y, state, modifiers);
-	if (InputState::kDown == state && !processed)
+	if (skui::InputState::kDown == state && !processed)
 		Focus::SetFocus(nullptr);
 	return processed;
 }
