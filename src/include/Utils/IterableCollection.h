@@ -1,6 +1,6 @@
 #pragma once
 
-template<typename TType>
+template<typename TType, typename TToString>
 class IterableCollection
 {
 public:
@@ -37,6 +37,12 @@ public:
 			return {};
 		return *m_Active;
 	}
+
+	SkString ToString() const
+	{
+		return TToString{}(Active());
+	}
+
 private:
 	std::list<TType> m_Layers;
 	typename std::list<TType>::iterator m_Active = m_Layers.end();

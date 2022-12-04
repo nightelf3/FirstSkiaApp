@@ -10,6 +10,35 @@
 
 using namespace sk_app;
 
+namespace
+{
+	struct LayersTitile
+	{
+		SkString operator()(std::shared_ptr<BaseLayer> layer)
+		{
+			return layer ? layer->GetTitle() : SkString{"None"};
+		}
+	};
+
+	struct BackendsTitile
+	{
+		SkString operator()(sk_app::Window::BackendType type)
+		{
+			switch (type)
+			{
+			case sk_app::Window::kNativeGL_BackendType:
+				return SkString{"OpenGL"};
+			case sk_app::Window::kDirect3D_BackendType:
+				return SkString{"Direct3D"};
+			case sk_app::Window::kRaster_BackendType:
+				return SkString{"Raster"};
+			}
+			return SkString{"None"};
+		}
+	};
+}
+
+// GL wants these variables
 bool gCheckErrorGL = false;
 bool gLogCallsGL = false;
 
@@ -31,8 +60,8 @@ private:
 
 	std::unique_ptr<sk_app::Window> m_Window;
 
-	IterableCollection<std::shared_ptr<BaseLayer>> m_Layers;
-	IterableCollection<sk_app::Window::BackendType> m_Backends;
+	IterableCollection<std::shared_ptr<BaseLayer>, LayersTitile> m_Layers;
+	IterableCollection<sk_app::Window::BackendType, BackendsTitile> m_Backends;
 	FPS m_FPS;
 };
 
@@ -48,6 +77,7 @@ FirstSkiaApp::FirstSkiaApp(int argc, char** argv, void* platformData)
 	m_Layers.Add(std::make_shared<BlackAndWhiteLayer>());
 
 	m_Backends.Add(Window::kNativeGL_BackendType);
+	m_Backends.Add(Window::kDirect3D_BackendType);
 	m_Backends.Add(Window::kRaster_BackendType);
 
 	// register callbacks
@@ -131,14 +161,11 @@ void FirstSkiaApp::updateTitle()
 		return;
 
 	SkString title;
-	title.append(Window::kRaster_BackendType == m_Backends.Active() ? "Raster" : "OpenGL");
+	title.append(m_Backends.ToString());
 	title.append(" - ");
 
-	if (auto layer = m_Layers.Active())
-	{
-		title.append(layer->GetTitle());
-		title.append(" - ");
-	}
+	title.append(m_Layers.ToString());
+	title.append(" - ");
 
 	title.append(m_FPS.Get());
 

@@ -49,7 +49,7 @@ executable("FirstSkiaApp") {
   ]
 
   libs = []
-  public_configs = [ "//external/skia:opengl" ]
+  public_configs = []
   include_dirs = [ "src", "//external/skia/skia" ]
   deps = [
     "//external/skia",
@@ -77,6 +77,7 @@ executable("FirstSkiaApp") {
     ]
   } else if (is_mac) {
     sources += [
+      "//external/skia/skia/tools/sk_app/mac/RasterWindowContext_mac.mm",
       "//external/skia/skia/tools/sk_app/mac/WindowContextFactory_mac.h",
       "//external/skia/skia/tools/sk_app/mac/Window_mac.h",
       "//external/skia/skia/tools/sk_app/mac/Window_mac.mm",
@@ -90,6 +91,7 @@ executable("FirstSkiaApp") {
   }
 
   #GL
+  public_configs += [ "//external/skia:opengl" ]
   sources += [
     "//external/skia/skia/tools/sk_app/GLWindowContext.cpp",
     "//external/skia/skia/tools/sk_app/GLWindowContext.h",
@@ -99,9 +101,6 @@ executable("FirstSkiaApp") {
   if (is_win) {
     sources += [ "//external/skia/skia/tools/sk_app/win/GLWindowContext_win.cpp" ]
   } else if (is_mac) {
-    sources += [
-      "//external/skia/skia/tools/sk_app/mac/GLWindowContext_mac.mm",
-      "//external/skia/skia/tools/sk_app/mac/RasterWindowContext_mac.mm",
-    ]
+    sources += [ "//external/skia/skia/tools/sk_app/mac/GLWindowContext_mac.mm" ]
   }
 }
