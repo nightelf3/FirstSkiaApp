@@ -5,8 +5,6 @@ copy("resources") {
     "4k.jpg",
     "8k.jpg",
     "doge.png",
-    "shaders/BlackAndWhite.sksl",
-    "shaders/Swirl.sksl",
   ]
   outputs = [ "$root_out_dir/{{source}}" ]
 }

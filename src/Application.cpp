@@ -5,8 +5,10 @@
 
 #include "include/Utils/IterableCollection.h"
 #include "include/Utils/FPS.h"
+#include "include/Layers/SimpleLinearGradient.h"
+#include "include/Layers/LinearGradient4P.h"
+#include "include/Layers/LinearGradient4P_v2.h"
 #include "include/Layers/SwirlLayer.h"
-#include "include/Layers/BlackAndWhiteLayer.h"
 
 using namespace sk_app;
 
@@ -71,8 +73,10 @@ FirstSkiaApp::FirstSkiaApp(int argc, char** argv, void* platformData)
 	m_Window.reset(Window::CreateNativeWindow(platformData));
 	m_Window->setRequestedDisplayParams(DisplayParams());
 
+	m_Layers.Add(std::make_shared<SimpleLinearGradient>());
+	m_Layers.Add(std::make_shared<LinearGradient4P>());
+	m_Layers.Add(std::make_shared<LinearGradient4P_v2>());
 	m_Layers.Add(std::make_shared<SwirlLayer>());
-	m_Layers.Add(std::make_shared<BlackAndWhiteLayer>());
 
 	m_Backends.Add(Window::kNativeGL_BackendType);
 	m_Backends.Add(Window::kRaster_BackendType);
