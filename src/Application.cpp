@@ -28,8 +28,6 @@ namespace
 			{
 			case sk_app::Window::kNativeGL_BackendType:
 				return SkString{"OpenGL"};
-			case sk_app::Window::kDirect3D_BackendType:
-				return SkString{"Direct3D"};
 			case sk_app::Window::kRaster_BackendType:
 				return SkString{"Raster"};
 			}
@@ -77,7 +75,6 @@ FirstSkiaApp::FirstSkiaApp(int argc, char** argv, void* platformData)
 	m_Layers.Add(std::make_shared<BlackAndWhiteLayer>());
 
 	m_Backends.Add(Window::kNativeGL_BackendType);
-	m_Backends.Add(Window::kDirect3D_BackendType);
 	m_Backends.Add(Window::kRaster_BackendType);
 
 	// register callbacks
